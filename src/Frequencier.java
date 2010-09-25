@@ -110,24 +110,12 @@ public class Frequencier {
 		}
 	}
 	
-	private double[] iterate() throws Exception
+	private double iterate() throws Exception
 	{
 		int x = 0;
 		double max = 0;
 		double[] data = read();
-		
-		MFCC mcff = new MFCC(stream_.getFormat().getSampleRate(), WINDOW_SIZE, 20, true, 20.0, 8000.0, 40);
-		
-		double[][] mcff_ = mcff.process(data);
-		/*
-		for (int i =0 ; i < mcff_[0].length; ++i)
-		{
-			System.out.printf("%d: %.03f\t",i, mcff_[0][i]);
-		}
-		System.out.printf("\n");
-		
-		
-		
+
 		fft_.transform(data, null);
 		
 		for (int i=0; i < data.length; ++i)
@@ -139,8 +127,6 @@ public class Frequencier {
 			}
 		}
 		
-		return x * stream_.getFormat().getSampleRate() / WINDOW_SIZE;*/
-		
-		return mcff_[0];
+		return x * stream_.getFormat().getSampleRate() / WINDOW_SIZE;
 	}
 }
