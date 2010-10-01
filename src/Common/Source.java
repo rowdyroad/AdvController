@@ -1,10 +1,13 @@
 package Common;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 
 public class Source {
@@ -37,6 +40,8 @@ public class Source {
 		stream_ = stream;
 		frameSize_ = stream_.getFormat().getFrameSize();
 		channels_ = stream_.getFormat().getChannels();
+		
+		
 		scale_ = 1.0 / ((double) stream.getFormat().getChannels() * (1 << (stream.getFormat().getSampleSizeInBits() - 1)));
 		
 	}
@@ -54,13 +59,13 @@ public class Source {
 
 	private double convertFromAr(byte[] b, int start, int end)
 	{
-		
-		return (double)((short) b[end] << 8 | b[start]) * scale_;
-		// return (double)( (int)(stream_.getFormat().isBigEndian() ? b[end] << 8 | b[start] : b[start] << 8 | b[end]) * scale_);
+		 ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
+		 buf.order(stream_.getFormat().isBigEndian() ? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
+		 return (double)buf.getShort() * scale_;
 	}
+
 	public Boolean Read()
 	{
-		Utils.Dbg("Scale: %f",scale_);
 		byte[] b = new byte[frameSize_];	
 		int c;
 		try
@@ -88,6 +93,7 @@ public class Source {
 		{
 			left = right = convertFromAr(b, 0,1);
 		}
+		
 		
 		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
 		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);

@@ -1,124 +1,78 @@
 package Capturer;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import Common.Config;
+import Common.FingerPrint;
 import Common.Source;
 import Common.Frequencier;
 import Common.Utils;
 import Common.Source.Channel;
 
 
-public class Capturer implements Frequencier.Catcher 
+public class Capturer implements Frequencier.Catcher
 {
-	public class Record
-	{
-		long timeoffset;
-		Frequencier.Frequency[] frequency;
-		
-		public Record(long timeoffset, Frequencier.Frequency[] frequency)
-		{
-			this.timeoffset = timeoffset;
-			this.frequency = frequency;
-		}
-	};
-	
-	public interface  Resulter
-	{
-		public void OnResult(Capturer id, double equivalence, long timestamp); 
-	}
-
-	private Vector<Record> vector_ = new Vector<Record>();
 	private long time_ = 0;
-	private double min_ = 999999999;
-	private double max_ = 0;
-	private Object id_ ;
-	
-	private Resulter resulter_ = null;
-	private Source device_ = null;
-	
-	public Object GetId()
-	{
-		return id_;
-	}
-	
 	Source source_ = null;
-	
-	public Capturer(String filename, Object id, Resulter resulter) throws Exception
+	FingerPrint fp_;
+
+	public Capturer(String filename, String id) throws Exception
 	{
 		source_ = new Source(AudioSystem.getAudioInputStream(new File(filename)));
 		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this));
-		id_ = id;
-		resulter_ = resulter;
+		fp_ = new FingerPrint(id);
 	}
 	
-	public double MinFrequency()
-	{
-		return min_;
-	}
-	
-	public double MaxFrequency()
-	{
-		return max_;
-	}
-	
-	
-	public int Size()
-	{
-		return vector_.size();
-	}
-	
-	public Record Get(int i)
-	{
-		try
-		{
-			return vector_.get(i);
-		}
-		catch (Exception e)
-		{
-			return null;
-		}
-	}
-	public void  NotifyResult(double equivalence, long timestamp)
-	{
-		if (resulter_ != null)
-		{
-			resulter_.OnResult(this, equivalence, timestamp);
-		}
-	}
-	
-	public void Process()
+	public FingerPrint Process()
 	{
 		while (source_.Read()) {  };
+		
+		Iterator<Entry<Double, Integer>> it = r.entrySet().iterator();		
+	
+		while (it.hasNext() )
+		{
+			   Entry<Double, Integer> kvp = it.next();
+			   Utils.Dbg("%f - %d", kvp.getKey(), kvp.getValue() );
+		}
+		
+		return fp_;
 	}
 	
 	public long Time()
 	{
 		return time_;
 	}
+	private Common.Frequency[] last_ =null;
+	private SortedMap<Double, Integer> r = new TreeMap<Double, Integer>();
 	
-	public Vector<Record> Items()
-	{
-		return vector_;
-	}
-	
-	private Frequencier.Frequency[] last_ =null;
 	@Override
-	public boolean OnReceived(Frequencier.Frequency[] frequency, long timeoffset) 
-	{
+	public boolean OnReceived(Common.Frequency[] frequency, long timeoffset) 
+	{		
 		if (last_ == null || !Arrays.equals(last_, frequency))
 		{
-			vector_.add(new Record(time_+ timeoffset, frequency));
+			fp_.Put(time_+ timeoffset, frequency);
 			last_ = frequency;
 		}
 		time_ += timeoffset;
 		return true;
 	}
+	
 
 	@Override
 	public void OnError() {

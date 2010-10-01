@@ -14,6 +14,7 @@ import javax.sound.sampled.TargetDataLine;
 
 import Capturer.Capturer;
 import Common.Config;
+import Common.FingerPrint;
 import Common.Frequencier;
 import Common.Source;
 import Common.Source.Channel;
@@ -47,7 +48,7 @@ public class Streamer implements Frequencier.Catcher
 	
 	private AudioInputStream stream_;
 	private Frequencier freq_;
-	private Vector<Capturer> capturers_ = new Vector<Capturer>();
+	private Vector<FingerPrint> fingerPrints_ = new Vector<FingerPrint>();
 	private long time_ = 0;
 	Vector<Listener> listeners_= new Vector<Listener>();
 	
@@ -69,16 +70,12 @@ public class Streamer implements Frequencier.Catcher
 		source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(this));
 	}
 	
-	public void AddCapturer(Capturer capt)
+	public void AddCapturer(FingerPrint fp)
 	{
-		capt.Process();
-		
-		if (capt.Size() == 0) return;
-		minFrequency_ = Math.min(capt.MinFrequency() * 0.9, minFrequency_);
-		maxFrequency_ = Math.max(capt.MaxFrequency() * 1.1, maxFrequency_) ;
-		
-		Utils.Dbg("Length:%d", capt.Time());
-		capturers_.add(capt);
+		if (fp.Size() == 0) return;
+		minFrequency_ = Math.min(fp.MinFrequency() * 0.9, minFrequency_);
+		maxFrequency_ = Math.max(fp.MaxFrequency() * 1.1, maxFrequency_) ;
+		fingerPrints_.add(fp);
 	}
 	
 	public void Process()
@@ -94,18 +91,13 @@ public class Streamer implements Frequencier.Catcher
 	public long Time()
 	{
 		return time_;
-		
 	}
 	
 	public boolean compare(double[] src, double[] dst, double diff)
 	{
 		double k  = 0;
-		
-
 		k = k / src.length;
-	
 		return true;
-		
 	}
 	public  boolean compare(long src, long dst,  long diff)
 	{		 
@@ -117,17 +109,17 @@ public class Streamer implements Frequencier.Catcher
 			return Math.abs(src - dst) < diff;
 	}
 
-	private Frequencier.Frequency[] last_ = null;
+	private Common.Frequency[] last_ = null;
 	
-	private void processCapturers(Frequencier.Frequency[] frequency)
+	private void processCapturers(Common.Frequency[] frequency)
 	{
 		if (last_!=null && Arrays.equals(last_, frequency)) return;
 		
 		last_ = frequency;
-		for (int i =0; i <capturers_.size(); ++i)
+		for (int i =0; i <fingerPrints_.size(); ++i)
 		{
-			 Capturer cpt = capturers_.get(i);			
-			 for (int j =0; j <cpt.Size() ; ++j)
+			 FingerPrint fp = fingerPrints_.get(i);			
+			 for (int j =0; j <fp.Size() ; ++j)
 			 {
 			
 			 }
@@ -185,7 +177,7 @@ public class Streamer implements Frequencier.Catcher
 	
 	long  ts = System.currentTimeMillis();
 	@Override
-	public boolean OnReceived(Frequencier.Frequency[] frequency, long timeoffset) 
+	public boolean OnReceived(Common.Frequency[] frequency, long timeoffset) 
 	{
 		time_+=timeoffset;
 	//	Utils.Dbg("frequency: %.03f - %d\t%d",frequency, time_, System.currentTimeMillis() -  ts);

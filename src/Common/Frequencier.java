@@ -1,6 +1,7 @@
 package Common;
 
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -16,17 +17,6 @@ public class Frequencier implements Source.AudioReceiver {
 		public void OnError();
 	}
 	
-	public class Frequency
-	{
-		Double  frequency;
-		Double level;
-		
-		public Frequency(Double frequency, Double level)
-		{ 
-			this.frequency = frequency;
-			this.level = level;
-		}		
-	}
 	private FFT fft_;	
 	private double [] buf_ = new double[Config.Instance().WindowSize()];
 	private int index_ = 0;
@@ -35,7 +25,7 @@ public class Frequencier implements Source.AudioReceiver {
 	public Frequencier(Catcher catcher)
 	{
 		catcher_ = catcher;
-		fft_ = new FFT(FFT.FFT_NORMALIZED_POWER, Config.Instance().WindowSize(), FFT.WND_HAMMING);
+		fft_ = new FFT(FFT.FFT_MAGNITUDE, Config.Instance().WindowSize(), FFT.WND_HAMMING);
 	}
 	
 	int time_ = 0;
@@ -94,30 +84,30 @@ public class Frequencier implements Source.AudioReceiver {
 		fft_.transform(data, null);
 		Frequency[] ret = new Frequency[data.length];
 		SortedMap<Double, Double> map = new TreeMap<Double, Double>(new DescComparator());
-	
-		double  srps = Config.Instance().SampleRate() / Config.Instance().WindowSize();
+		
+		double  srps = (double)Config.Instance().SampleRate() / Config.Instance().WindowSize();
 		int start =  (int) (Config.Instance().MinFrequency() / srps);
 		int stop = (int) (Config.Instance().MaxFrequency() / srps);
-		for (int i= start; i <stop; ++i)
+		
+		for (int i = start; i <stop; ++i)
 		{
-			map.put(data[i], (double)i *srps);
+				map.put(data[i], (double)i *srps);
 		}
 		
-		Iterator<Entry<Double, Double>> it = map.entrySet().iterator();
-	   
-	  double  limit =map.firstKey() * Config.Instance().LevelLimit();;
-	   int i=0;
-	   while (it.hasNext())
+		if (map.size() < Config.Instance().LevelsCount()) return null;
+		
+		
+		Iterator<Entry<Double, Double>> it = map.entrySet().iterator();		
+		
+	   int i = 0;
+	   while (it.hasNext() && i < Config.Instance().LevelsCount())
 	   {
 			 Entry<Double, Double> kvp = it.next();
-			 if (kvp.getKey() <= limit) break;
-			// Utils.Dbg("%.03f / %f",kvp.getValue(), kvp.getKey());
+			 Utils.Dbg("%d: %.03f / %f",i, kvp.getValue(), kvp.getKey());
 	  		 ret[i++] = new Frequency(kvp.getValue(), kvp.getKey());
 	   }
-	   if (ret.length > 0)
-	   {
-		   Utils.Dbg("%.03f / %f",ret[0].frequency, ret[0].level);
-	   }
+	   
+
 	  
 		return ret;
 	}

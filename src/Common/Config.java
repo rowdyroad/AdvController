@@ -6,10 +6,10 @@ public class Config {
 	
 	private int sample_rate_ = 44100;
 	private int window_size_ = 4096;
-	private int overlapped_coef_ = 3;
-	private double level_limit_ = 0.1;
-	private int min_frequency_ = 20;
-	private int max_frequency_ = 20000;
+	private int overlapped_coef_ = 4;
+	private int levels_count_= 5;
+	private int min_frequency_ = 0;
+	private int max_frequency_ = 20050;
 	
 	private static Config instance_ = null;
 	
@@ -44,8 +44,7 @@ public class Config {
 		      sample_rate_ = Integer.decode( p.getProperty("sample_rate", "44100"));
 		      window_size_ = Integer.decode(p.getProperty("window_size", "4096"));
 		      overlapped_coef_ = Integer.decode(p.getProperty("overlapped_coef","4"));
-		      level_limit_ = Double.valueOf(p.getProperty("level_limit","0.1"));
-		      
+		      levels_count_ = Integer.valueOf(p.getProperty("levels_count","5"));
 		      min_frequency_ = Integer.decode(p.getProperty("min_frequency","20"));
 		      max_frequency_ = Integer.decode(p.getProperty("max_frequency","20000"));
 		  }
@@ -70,9 +69,9 @@ public class Config {
 		return overlapped_coef_;
 	}
 	
-	public double LevelLimit()
+	public int LevelsCount()
 	{
-		return level_limit_;
+		return levels_count_;
 	}
 	
 	public int MinFrequency()

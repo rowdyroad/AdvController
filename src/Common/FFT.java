@@ -34,7 +34,8 @@ public final class FFT
 	public static final int WND_RECT = 0;
 	/** used to specify a Hamming window function */
 	public static final int WND_HAMMING = 1;
-	/** used to specify a 61-dB 3-sample Blackman-Harris window function */
+	/** used to specify a 61-dB 3-sample Blac
+	 * kman-Harris window function */
 	public static final int WND_BH3 = 2;
 	/** used to specify a 74-dB 4-sample Blackman-Harris window function */
 	public static final int WND_BH4 = 3;
