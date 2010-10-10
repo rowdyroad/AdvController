@@ -1,5 +1,13 @@
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.Vector;
 
 import javax.sound.sampled.AudioInputStream;
@@ -13,7 +21,7 @@ public class Frequencier {
 
 	public interface Catcher
 	{
-		public boolean OnReceived(double frequency, long timeoffset);
+		public boolean OnReceived(double[] frequency, long timeoffset);
 		public void OnError();
 	}
 	
@@ -43,10 +51,9 @@ public class Frequencier {
 
 	private double[] read() throws Exception
 	{
-		
 		byte[] b = new byte[frameSize_];
 		while ( index_ <  WINDOW_SIZE)
-		{
+		{		
 				int c = stream_.read(b);
 				if (c == -1)
 				{
@@ -58,18 +65,13 @@ public class Frequencier {
 					{
 						break;
 					}
-				}
-				
+				}		
 			short db =(short) (b[3] << 8 | b[2]);
 			buf_[index_++] = db * scale_;
 		}	
 		
 		double [] ret = new double[WINDOW_SIZE];
-		
-		
-		
 		System.arraycopy(buf_, 0, ret, 0, WINDOW_SIZE);
-		
 		Arrays.fill(buf_, 0);
 		System.arraycopy(ret, WINDOW_SIZE / OVERLAPPED_COEF, buf_, 0, WINDOW_SIZE  - WINDOW_SIZE / OVERLAPPED_COEF);
 		index_ = (index_ < WINDOW_SIZE)  ?  0  :  WINDOW_SIZE  - WINDOW_SIZE / OVERLAPPED_COEF;
@@ -80,15 +82,15 @@ public class Frequencier {
 	public void process()
 	{
 		int time = 0;
-		double last = -1;
+		double[] last =null;
 		
 		try 
 		{		
 			while (true)
 			{
-				double data = iterate();
-				if (last == -1 && data == 0) continue;
-				if (last != data && data > 0)
+				double[] data = iterate();
+				if (last == null && data[0] == 0) continue;
+				if (data!=null && !Arrays.equals(data,last))
 				{
 					
 					if (! catcher_.OnReceived(data, time))
@@ -105,28 +107,47 @@ public class Frequencier {
 		}
 		catch (Exception e)
 		{
-			System.out.println(e.toString());
+			e.printStackTrace();
 			catcher_.OnError();
+			
 		}
 	}
 	
-	private double iterate() throws Exception
+	class DescComparator implements Comparator<Double>
 	{
-		int x = 0;
-		double max = 0;
-		double[] data = read();
 
-		fft_.transform(data, null);
-		
-		for (int i=0; i < data.length; ++i)
-		{
-			if (data[i] > max)
-			{
-				max = data[i];	
-				x = i;
-			}
+		@Override
+		public int compare(Double arg0, Double arg1) {
+			if (arg0 < arg1) return 1;
+			if (arg0 > arg1) return -1;
+			return 0;
 		}
 		
-		return x * stream_.getFormat().getSampleRate() / WINDOW_SIZE;
+	}
+	
+	private double[]  iterate() throws Exception
+	{
+		double[] data = read();
+		fft_.transform(data, null);
+		double[] ret = new double[20];
+		Arrays.fill(ret, 0);		
+		SortedMap<Double, Double> map = new TreeMap<Double, Double>(new DescComparator());
+	
+		double  srps = stream_.getFormat().getSampleRate()  / WINDOW_SIZE;
+		int start =  (int) (20 / srps);
+		int stop = (int) (20000 / srps);
+		
+		for (int i= start; i <stop; ++i)
+		{
+			map.put(data[i], (double)i *srps);
+		}
+		
+		Iterator<Double> it = map.values().iterator();
+		
+		for (int i = 0; i < ret.length && it.hasNext(); ++i)
+		{
+			ret[i] = it.next(); 
+		}		
+		return ret;
 	}
 }

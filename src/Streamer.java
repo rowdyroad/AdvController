@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.IOException;
 import java.sql.Date;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -79,6 +80,21 @@ public class Streamer implements Frequencier.Catcher
 		
 	}
 	
+	public boolean compare(double[] src, double[] dst, double diff)
+	{
+		double k  = 0;
+		
+		for (int i=0; i < src.length; ++i)
+		{
+			double z = src[i] - dst[i];
+			k+=z*z;
+		}
+		
+		Utils.Dbg(k/src.length);
+		
+		return true;
+		
+	}
 	public  boolean compare(long src, long dst,  long diff)
 	{		 
 			return Math.abs(src - dst) < diff;
@@ -95,34 +111,30 @@ public class Streamer implements Frequencier.Catcher
 		return  (frequency <capturer.MinFrequency() * 0.9 || frequency > capturer.MaxFrequency()*1.1); 
 	}
 	
-	private double last_ = -1;
+	private double[] last_ = null;
 	
-	private void processCapturers(double frequency)
+	private void processCapturers(double[] frequency)
 	{
-		if (last_ == frequency) return;
+		if (last_!=null && Arrays.equals(last_, frequency)) return;
+		
 		last_ = frequency;
 		for (int i =0; i <capturers_.size(); ++i)
 		{
 			 Capturer cpt = capturers_.get(i);			 
-			 if (ignoreFreq(frequency, cpt)) continue;
-		
 			 for (int j =0; j <cpt.Size() / 10; ++j)
 			 {
 				if (compare(cpt.Get(j).frequency, frequency, 4))
 				{
 						 listenerId++;
-						 //Utils.Dbg("%d Add to listeners  %.03f - %.03f", listenerId, cpt.Get(j).frequency, frequency);
 						 listeners_.add(new Listener(listenerId, cpt, j, -cpt.Get(j).timeoffset));
 				}		
 			 }
 		}
-			 
-	
 	}
 	
-	private void processListeners(double frequency, long timeoffset)
+/*	private void processListeners(double[] frequency, long timeoffset)
 	{
-		for (int i = 0; i <listeners_.size(); ++i)
+	for (int i = 0; i <listeners_.size(); ++i)
 		{
 			Listener lst = listeners_.get(i);
 			Capturer cpt = lst.capturer;
@@ -167,22 +179,17 @@ public class Streamer implements Frequencier.Catcher
 			 
 
 		}
-	}
+	}*/
 	
 	long  ts = System.currentTimeMillis();
 	@Override
-	public boolean OnReceived(double frequency, long timeoffset) 
+	public boolean OnReceived(double[] frequency, long timeoffset) 
 	{
-		
-		
 		time_+=timeoffset;
-		
-	//	System.out.printf("%.03f\t\t%d\n",frequency, time_);
-		
-		
 		Utils.Dbg("frequency: %.03f - %d\t%d",frequency, time_, System.currentTimeMillis() -  ts);
-		processListeners(frequency, timeoffset);
 		processCapturers(frequency);
+		
+		
 		return true;
 	}
 

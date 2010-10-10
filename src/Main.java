@@ -21,7 +21,7 @@ public static void main (String args []) throws Exception {
 		Streamer stm = new Streamer();
 		stm.AddCapturer(new Capturer("d:\\temp\\t.wav","pripev", new ShowResulter()));
 		stm.AddCapturer(new Capturer("d:\\temp\\oliver.wav","oliver", new ShowResulter()));	
-			stm.Process();
+		stm.Process();
 		
 	  /* MFCC mfcc = new MFCC(8000, 512, 12, true);	 
 	   
