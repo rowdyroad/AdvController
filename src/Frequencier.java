@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Vector;
@@ -21,12 +22,23 @@ public class Frequencier {
 
 	public interface Catcher
 	{
-		public boolean OnReceived(double[] frequency, long timeoffset);
+		public boolean OnReceived(Frequency[] frequency, long timeoffset);
 		public void OnError();
 	}
 	
+	public class Frequency
+	{
+		int  frequency;
+		int level;
+		
+		public Frequency(int frequency, int level)
+		{
+			this.frequency = frequency;
+			this.level = level;
+		}		
+	}
 	static private int WINDOW_SIZE = 4096;
-	static private int OVERLAPPED_COEF = 2; 
+	static private int OVERLAPPED_COEF = 3; 
 	private AudioInputStream stream_;
 	private FFT fft_;	
 	private double [] buf_ = new double[WINDOW_SIZE];
@@ -67,7 +79,7 @@ public class Frequencier {
 					}
 				}		
 			short db =(short) (b[3] << 8 | b[2]);
-			buf_[index_++] = db * scale_;
+			buf_[index_++] = db * scale_;			
 		}	
 		
 		double [] ret = new double[WINDOW_SIZE];
@@ -82,14 +94,15 @@ public class Frequencier {
 	public void process()
 	{
 		int time = 0;
-		double[] last =null;
+		Frequency[] last =null;
 		
 		try 
 		{		
 			while (true)
 			{
-				double[] data = iterate();
-				if (last == null && data[0] == 0) continue;
+				Frequency[] data = iterate();
+			//	if (last == null && data[0].frequency == 0) continue;
+				
 				if (data!=null && !Arrays.equals(data,last))
 				{
 					
@@ -113,11 +126,11 @@ public class Frequencier {
 		}
 	}
 	
-	class DescComparator implements Comparator<Double>
+	class DescComparator implements Comparator<Integer>
 	{
 
 		@Override
-		public int compare(Double arg0, Double arg1) {
+		public int compare(Integer arg0, Integer arg1) {
 			if (arg0 < arg1) return 1;
 			if (arg0 > arg1) return -1;
 			return 0;
@@ -125,29 +138,61 @@ public class Frequencier {
 		
 	}
 	
-	private double[]  iterate() throws Exception
+	private Frequency[]  iterate() throws Exception
 	{
 		double[] data = read();
 		fft_.transform(data, null);
-		double[] ret = new double[20];
-		Arrays.fill(ret, 0);		
-		SortedMap<Double, Double> map = new TreeMap<Double, Double>(new DescComparator());
+
+		Frequency[] ret = new Frequency[data.length];
+		SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>(new DescComparator());
 	
 		double  srps = stream_.getFormat().getSampleRate()  / WINDOW_SIZE;
 		int start =  (int) (20 / srps);
 		int stop = (int) (20000 / srps);
-		
 		for (int i= start; i <stop; ++i)
 		{
-			map.put(data[i], (double)i *srps);
+			map.put((int)(data[i] * Integer.MAX_VALUE), (int) (i *srps));
 		}
 		
-		Iterator<Double> it = map.values().iterator();
+		Iterator<Entry<Integer,Integer>> it = map.entrySet().iterator();
 		
-		for (int i = 0; i < ret.length && it.hasNext(); ++i)
+		
+	   int  d = 0;
+	   
+	   int limit = (int) (map.firstKey() * 0.2);
+	   int i=0;
+	   while (it.hasNext())
+	   {
+			 Entry<Integer, Integer> kvp = it.next();
+			 if (kvp.getKey() <= limit) break;
+	  		 ret[i++] = new Frequency(kvp.getValue(), kvp.getKey());
+			 d+=kvp.getKey();
+	   }
+	   
+	   int res = 0;
+	   for (int j = 0; j < i; ++j)
+	   {	
+			   System.out.printf("%d/%d/%d     ", ret[j].frequency, ret[j].level, ret[j].level *100 /d);
+			   res+=(int)((double)ret[j].level / d * ret[j].frequency);
+	   }
+	   
+		System.out.printf(" - %d\n", res);
+	   
+		/*for (int i = 0; i < ret.length && it.hasNext(); ++i)
 		{
-			ret[i] = it.next(); 
-		}		
+			Entry<Double, Double> kvp = it.next();
+			ret[i] = new Frequency(kvp.getValue(), kvp.getKey());
+			System.out.printf("%.03f / %.03f\t", ret[i].frequency, ret[i].level);
+		}
+		
+		for (int i  = 0; i < ret.length - 1; ++i)
+		{
+			d = ret[i].frequency*(ret[i].level - ret[i+1].level);
+		}
+		
+		System.out.printf(" -  %.03f\n", d);*/
+		
+		
 		return ret;
 	}
 }

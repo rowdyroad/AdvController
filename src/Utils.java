@@ -20,7 +20,16 @@ public class Utils
 		{
 			System.out.println(obj);
 		}
-	
+		static public void DbgAr(double[] d)
+		{
+			for (int i = 0 ; i< d.length; ++i)
+			{
+				System.out.print(d[i]);
+				System.out.print("\t");
+			}
+			System.out.println();
+		}
+		
 		static public String Time(long timestamp)
 		{
 			Date d = new Date(timestamp);

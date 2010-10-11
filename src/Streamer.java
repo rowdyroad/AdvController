@@ -84,14 +84,9 @@ public class Streamer implements Frequencier.Catcher
 	{
 		double k  = 0;
 		
-		for (int i=0; i < src.length; ++i)
-		{
-			double z = src[i] - dst[i];
-			k+=z*z;
-		}
-		
-		Utils.Dbg(k/src.length);
-		
+
+		k = k / src.length;
+	
 		return true;
 		
 	}
@@ -111,23 +106,21 @@ public class Streamer implements Frequencier.Catcher
 		return  (frequency <capturer.MinFrequency() * 0.9 || frequency > capturer.MaxFrequency()*1.1); 
 	}
 	
-	private double[] last_ = null;
+
 	
-	private void processCapturers(double[] frequency)
+	private Frequencier.Frequency[] last_ = null;
+	
+	private void processCapturers(Frequencier.Frequency[] frequency)
 	{
 		if (last_!=null && Arrays.equals(last_, frequency)) return;
 		
 		last_ = frequency;
 		for (int i =0; i <capturers_.size(); ++i)
 		{
-			 Capturer cpt = capturers_.get(i);			 
-			 for (int j =0; j <cpt.Size() / 10; ++j)
+			 Capturer cpt = capturers_.get(i);			
+			 for (int j =0; j <cpt.Size() ; ++j)
 			 {
-				if (compare(cpt.Get(j).frequency, frequency, 4))
-				{
-						 listenerId++;
-						 listeners_.add(new Listener(listenerId, cpt, j, -cpt.Get(j).timeoffset));
-				}		
+			
 			 }
 		}
 	}
@@ -183,10 +176,10 @@ public class Streamer implements Frequencier.Catcher
 	
 	long  ts = System.currentTimeMillis();
 	@Override
-	public boolean OnReceived(double[] frequency, long timeoffset) 
+	public boolean OnReceived(Frequencier.Frequency[] frequency, long timeoffset) 
 	{
 		time_+=timeoffset;
-		Utils.Dbg("frequency: %.03f - %d\t%d",frequency, time_, System.currentTimeMillis() -  ts);
+	//	Utils.Dbg("frequency: %.03f - %d\t%d",frequency, time_, System.currentTimeMillis() -  ts);
 		processCapturers(frequency);
 		
 		

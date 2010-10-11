@@ -13,9 +13,9 @@ public class Capturer implements Frequencier.Catcher
 	public class Record
 	{
 		long timeoffset;
-		double[] frequency;
+		Frequencier.Frequency[] frequency;
 		
-		public Record(long timeoffset, double[] frequency)
+		public Record(long timeoffset, Frequencier.Frequency[] frequency)
 		{
 			this.timeoffset = timeoffset;
 			this.frequency = frequency;
@@ -109,14 +109,12 @@ public class Capturer implements Frequencier.Catcher
 		return vector_;
 	}
 	
-	private double[] last_ =null;
+	private Frequencier.Frequency[] last_ =null;
 	@Override
-	public boolean OnReceived(double[] frequency, long timeoffset) 
+	public boolean OnReceived(Frequencier.Frequency[] frequency, long timeoffset) 
 	{
 		if (last_ == null || !Arrays.equals(last_, frequency))
 		{
-			//System.out.printf("CPT: %d - %.05f\n", time_ + timeoffset, frequency);
-				Utils.Dbg(frequency[0]);
 			vector_.add(new Record(time_+ timeoffset, frequency));
 			last_ = frequency;
 		}
