@@ -18,11 +18,14 @@ class Main {
 public static void main (String args []) throws Exception {
 	
 		Streamer stm = new Streamer();
-		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pepsi.wav","Pepsi", new ShowResulter()));
-		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\axe.wav","Axe", new ShowResulter()));
-		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pegeot.wav","Pegeouti", new ShowResulter()));
-		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pegeot-308.wav","pegeot-308", new ShowResulter()));
-		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\sprite.wav","Sprite", new ShowResulter()));
+//		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pepsi.wav","Pepsi", new ShowResulter()));
+		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\axe1.wav","Axe", new ShowResulter()));
+		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\axe2.wav","Axe", new ShowResulter()));
+		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\axe3.wav","Axe", new ShowResulter()));
+		
+//		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pegeot.wav","Pegeouti", new ShowResulter()));
+//		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pegeot-308.wav","pegeot-308", new ShowResulter()));
+//		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\sprite.wav","Sprite", new ShowResulter()));
 		stm.Process();
 		
 	  /* MFCC mfcc = new MFCC(8000, 512, 12, true);	 

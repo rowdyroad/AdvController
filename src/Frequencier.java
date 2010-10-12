@@ -28,10 +28,10 @@ public class Frequencier {
 	
 	public class Frequency
 	{
-		int  frequency;
-		int level;
+		Double  frequency;
+		Double level;
 		
-		public Frequency(int frequency, int level)
+		public Frequency(Double frequency, Double level)
 		{
 			this.frequency = frequency;
 			this.level = level;
@@ -126,11 +126,11 @@ public class Frequencier {
 		}
 	}
 	
-	class DescComparator implements Comparator<Integer>
+	class DescComparator implements Comparator<Double>
 	{
 
 		@Override
-		public int compare(Integer arg0, Integer arg1) {
+		public int compare(Double arg0, Double arg1) {
 			if (arg0 < arg1) return 1;
 			if (arg0 > arg1) return -1;
 			return 0;
@@ -144,40 +144,33 @@ public class Frequencier {
 		fft_.transform(data, null);
 
 		Frequency[] ret = new Frequency[data.length];
-		SortedMap<Integer, Integer> map = new TreeMap<Integer, Integer>(new DescComparator());
+		SortedMap<Double, Double> map = new TreeMap<Double, Double>(new DescComparator());
 	
 		double  srps = stream_.getFormat().getSampleRate()  / WINDOW_SIZE;
 		int start =  (int) (20 / srps);
 		int stop = (int) (20000 / srps);
 		for (int i= start; i <stop; ++i)
 		{
-			map.put((int)(data[i] * Integer.MAX_VALUE), (int) (i *srps));
+			map.put(data[i], (double)i *srps);
 		}
 		
-		Iterator<Entry<Integer,Integer>> it = map.entrySet().iterator();
+		Iterator<Entry<Double, Double>> it = map.entrySet().iterator();
 		
 		
-	   int  d = 0;
+	   double  d = 0;
 	   
-	   int limit = (int) (map.firstKey() * 0.2);
+	  double  limit =map.firstKey() * 0.2;
 	   int i=0;
 	   while (it.hasNext())
 	   {
-			 Entry<Integer, Integer> kvp = it.next();
+			 Entry<Double, Double> kvp = it.next();
 			 if (kvp.getKey() <= limit) break;
+			 Utils.Dbg("%.03f / %f",kvp.getValue(), kvp.getKey());
 	  		 ret[i++] = new Frequency(kvp.getValue(), kvp.getKey());
-			 d+=kvp.getKey();
 	   }
 	   
-	   int res = 0;
-	   for (int j = 0; j < i; ++j)
-	   {	
-			   System.out.printf("%d/%d/%d     ", ret[j].frequency, ret[j].level, ret[j].level *100 /d);
-			   res+=(int)((double)ret[j].level / d * ret[j].frequency);
-	   }
-	   
-		System.out.printf(" - %d\n", res);
-	   
+	   Utils.Dbg("");
+	   	   
 		/*for (int i = 0; i < ret.length && it.hasNext(); ++i)
 		{
 			Entry<Double, Double> kvp = it.next();
