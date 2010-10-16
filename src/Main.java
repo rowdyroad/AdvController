@@ -19,9 +19,17 @@ public static void main (String args []) throws Exception {
 	
 		
 		Streamer stm = new Streamer();
-		stm.AddCapturer(new Capturer("d:\\temp\\t.wav","pripev", new ShowResulter()));
-		stm.AddCapturer(new Capturer("d:\\temp\\oliver.wav","oliver", new ShowResulter()));	
-			stm.Process();
+/*		stm.AddCapturer(new Capturer("d:\\temp\\pepsi_.wav","zz", new ShowResulter()));
+		stm.AddCapturer(new Capturer("d:\\temp\\axe.wav","AXE", new ShowResulter()));
+			stm.AddCapturer(new Capturer("d:\\temp\\sprite.wav","Sprite", new ShowResulter()));
+		stm.AddCapturer(new Capturer("d:\\temp\\pepsi.wav","Pepsi", new ShowResulter()));*/	
+	
+				stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\pepsi_l.wav","Pepsi", new ShowResulter()));
+		stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\axe_l.wav","AXE", new ShowResulter()));
+			stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\sprite_l.wav","Sprite", new ShowResulter()));
+		stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\peugeot_l.wav","peugeot", new ShowResulter()));
+		
+		stm.Process();
 		
 	  /* MFCC mfcc = new MFCC(8000, 512, 12, true);	 
 	   

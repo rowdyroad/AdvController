@@ -143,7 +143,7 @@ public class Streamer implements Frequencier.Catcher
 			}
 			
 		
-			Utils.Dbg("%d  %d\t%.03f", lst.id,  lst.time, frequency);
+		//	Utils.Dbg("%d  %d\t%.03f", lst.id,  lst.time, frequency);
 			 
 			 for (int j = lst.index;  j <cpt.Size(); ++j)
 			 {
