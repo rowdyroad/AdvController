@@ -6,7 +6,7 @@ public class Config {
 	
 	private int sample_rate_ = 44100;
 	private int window_size_ = 4096;
-	private int overlapped_coef_ = 4;
+	private int overlapped_coef_ = 3;
 	private double level_limit_ = 0.1;
 	private int min_frequency_ = 20;
 	private int max_frequency_ = 20000;

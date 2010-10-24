@@ -55,10 +55,12 @@ public class Source {
 	private double convertFromAr(byte[] b, int start, int end)
 	{
 		
-		 return (double)( (int)(stream_.getFormat().isBigEndian() ? b[end] << 8 | b[start] : b[start] << 8 | b[end]) * scale_);
+		return (double)((short) b[end] << 8 | b[start]) * scale_;
+		// return (double)( (int)(stream_.getFormat().isBigEndian() ? b[end] << 8 | b[start] : b[start] << 8 | b[end]) * scale_);
 	}
 	public Boolean Read()
 	{
+		Utils.Dbg("Scale: %f",scale_);
 		byte[] b = new byte[frameSize_];	
 		int c;
 		try

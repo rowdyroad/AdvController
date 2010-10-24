@@ -111,8 +111,12 @@ public class Frequencier implements Source.AudioReceiver {
 	   {
 			 Entry<Double, Double> kvp = it.next();
 			 if (kvp.getKey() <= limit) break;
-			 Utils.Dbg("%.03f / %f",kvp.getValue(), kvp.getKey());
+			// Utils.Dbg("%.03f / %f",kvp.getValue(), kvp.getKey());
 	  		 ret[i++] = new Frequency(kvp.getValue(), kvp.getKey());
+	   }
+	   if (ret.length > 0)
+	   {
+		   Utils.Dbg("%.03f / %f",ret[0].frequency, ret[0].level);
 	   }
 	  
 		return ret;
