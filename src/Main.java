@@ -24,9 +24,9 @@ public static void main (String args []) throws Exception {
 			stm.AddCapturer(new Capturer("d:\\temp\\sprite.wav","Sprite", new ShowResulter()));
 		stm.AddCapturer(new Capturer("d:\\temp\\pepsi.wav","Pepsi", new ShowResulter()));*/	
 	
-				stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\pepsi_l.wav","Pepsi", new ShowResulter()));
-		stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\axe_l.wav","AXE", new ShowResulter()));
-			stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\sprite_l.wav","Sprite", new ShowResulter()));
+		//		stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\pepsi_l.wav","Pepsi", new ShowResulter()));
+		//stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\axe_l.wav","AXE", new ShowResulter()));
+			//stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\sprite_l.wav","Sprite", new ShowResulter()));
 		stm.AddCapturer(new Capturer("D:\\Temp\\ptrn\\peugeot_l.wav","peugeot", new ShowResulter()));
 		
 		stm.Process();

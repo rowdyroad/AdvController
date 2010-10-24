@@ -60,7 +60,7 @@ public class Frequencier {
 					}
 				}
 				
-			short db =(short) (b[3] << 8 | b[2]);
+			short db =(short) (b[1] << 8 | b[0]);
 			buf_[index_++] = db * scale_;
 		}	
 		
