@@ -1,3 +1,4 @@
+package Common;
 import java.util.Date;
 
 import javax.sound.sampled.AudioInputStream;
@@ -30,6 +31,7 @@ public class Utils
 			System.out.println();
 		}
 		
+		@SuppressWarnings("deprecation")
 		static public String Time(long timestamp)
 		{
 			Date d = new Date(timestamp);

@@ -1,10 +1,8 @@
-import java.io.File;
-import java.io.IOException;
-import java.sql.Date;
+package Streamer;
+
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
+
 import java.util.Vector;
 
 import javax.sound.sampled.AudioFormat;
@@ -13,7 +11,16 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
+
+import Capturer.Capturer;
+import Common.Config;
+import Common.Frequencier;
+import Common.Source;
+import Common.Source.Channel;
+import Common.Utils;
+
+
+
 
 public class Streamer implements Frequencier.Catcher 
 {
@@ -34,7 +41,10 @@ public class Streamer implements Frequencier.Catcher
 		}
 	}
 	
-	private int listenerId = 0;
+	
+	
+	
+	
 	private AudioInputStream stream_;
 	private Frequencier freq_;
 	private Vector<Capturer> capturers_ = new Vector<Capturer>();
@@ -44,15 +54,19 @@ public class Streamer implements Frequencier.Catcher
 	HashMap<Capturer, Integer> indexes_ = new HashMap<Capturer, Integer>();
 	private double minFrequency_ = 999999999;
 	private double maxFrequency_ = 0;
-	public Streamer() throws LineUnavailableException
+
+	Source source_;
+	public Streamer() throws Exception
 	{
-		AudioFormat format =  new AudioFormat(44100,16,2, true, false);
+		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 		TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
 		line.open(format);
 		line.start(); 
-		stream_  =  new AudioInputStream(line);
-		freq_ = new Frequencier(stream_, this);
+		
+		source_ = new Source(new AudioInputStream(line));
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL,new Frequencier(this));
+		source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(this));
 	}
 	
 	public void AddCapturer(Capturer capt)
@@ -70,7 +84,10 @@ public class Streamer implements Frequencier.Catcher
 	public void Process()
 	{
 		System.out.printf("start at %s\n",Utils.Time(System.currentTimeMillis()));
-		freq_.process();
+		while (source_.Read())
+		{
+			
+		}
 	}
 	
 	
@@ -99,15 +116,7 @@ public class Streamer implements Frequencier.Catcher
 	{		 
 			return Math.abs(src - dst) < diff;
 	}
-	
-	
-	private boolean ignoreFreq(double frequency, Capturer capturer)
-	{
-		return  (frequency <capturer.MinFrequency() * 0.9 || frequency > capturer.MaxFrequency()*1.1); 
-	}
-	
 
-	
 	private Frequencier.Frequency[] last_ = null;
 	
 	private void processCapturers(Frequencier.Frequency[] frequency)
@@ -153,7 +162,7 @@ public class Streamer implements Frequencier.Catcher
 			 for (int j = lst.index;  j <cpt.Size(); ++j)
 			 {
 				if (compare(lst.time, cpt.Get(j).timeoffset,64))
-				{
+				{	
 					if (compare(frequency, cpt.Get(j).frequency, 	4))
 					{
 						lst.index = j+1;

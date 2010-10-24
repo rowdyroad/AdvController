@@ -1,14 +1,8 @@
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.sql.Date;
-import java.sql.Time;
-import java.util.Vector;
+package Streamer;
 
-import javax.sound.*;
-import javax.sound.sampled.*;
+import Capturer.Capturer;
 
-import analys.*;
+
 
 class Main {
 

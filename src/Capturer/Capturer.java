@@ -1,3 +1,4 @@
+package Capturer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -7,9 +8,14 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import Common.Source;
+import Common.Frequencier;
+import Common.Utils;
+import Common.Source.Channel;
+
+
 public class Capturer implements Frequencier.Catcher 
 {
-
 	public class Record
 	{
 		long timeoffset;
@@ -26,9 +32,7 @@ public class Capturer implements Frequencier.Catcher
 	{
 		public void OnResult(Capturer id, double equivalence, long timestamp); 
 	}
-	
-	private AudioInputStream stream_;
-	private Frequencier freq_;
+
 	private Vector<Record> vector_ = new Vector<Record>();
 	private long time_ = 0;
 	private double min_ = 999999999;
@@ -36,27 +40,21 @@ public class Capturer implements Frequencier.Catcher
 	private Object id_ ;
 	
 	private Resulter resulter_ = null;
-	
+	private Source device_ = null;
 	
 	public Object GetId()
 	{
 		return id_;
 	}
 	
+	Source source_ = null;
 	
-	public Capturer(String filename, Object id, Resulter resulter) throws UnsupportedAudioFileException, IOException
+	public Capturer(String filename, Object id, Resulter resulter) throws Exception
 	{
-		File soundFile = new File(filename);
-		stream_ = AudioSystem.getAudioInputStream(soundFile);
-		
-		freq_ = new Frequencier(stream_, this);
+		source_ = new Source(AudioSystem.getAudioInputStream(new File(filename)));
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this));
 		id_ = id;
 		resulter_ = resulter;
-	}
-	
-	public Capturer(String filename) throws UnsupportedAudioFileException, IOException
-	{
-		this(filename, null, null);
 	}
 	
 	public double MinFrequency()
@@ -96,7 +94,7 @@ public class Capturer implements Frequencier.Catcher
 	
 	public void Process()
 	{
-		freq_.process();
+		while (source_.Read()) {  };
 	}
 	
 	public long Time()
