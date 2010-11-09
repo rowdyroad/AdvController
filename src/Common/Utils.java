@@ -30,6 +30,14 @@ public class Utils
 			}
 			System.out.println();
 		}
+		static public void DbgFrq(Frequency[] frequency)
+		{
+			for (int i =0; i < frequency.length; ++i)
+			{
+				Utils.Dbg("%d %f", frequency[i].frequency, frequency[i].level);
+			}
+			Utils.Dbg("");
+		}
 		
 		@SuppressWarnings("deprecation")
 		static public String Time(long timestamp)

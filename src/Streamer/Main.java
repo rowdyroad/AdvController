@@ -1,6 +1,12 @@
 package Streamer;
 
+import java.io.File;
+import java.math.BigDecimal;
+import java.util.Vector;
+
 import Capturer.Capturer;
+import Common.FingerPrint;
+import Common.Utils;
 
 
 
@@ -11,7 +17,29 @@ class Main {
 
 public static void main (String args []) throws Exception {
 	
-		Streamer stm = new Streamer();
+	if (args.length > 0)
+	{
+		Common.Config.Filename = args[0];
+	}
+
+	Streamer stm = new Streamer();
+	String list[] = new File(Config.Instance().PromosPath()).list();
+
+	for(int i = 0; i < list.length; i++)
+	{
+		try
+		{
+			stm.AddFingerPrint(FingerPrint.Deserialize(Config.Instance().PromosPath()+list[i]));
+			Utils.Dbg("Serialized:%s",Config.Instance().PromosPath()+list[i]);
+		}
+		catch (Exception e)
+		{
+			
+		}
+	} 
+	
+	stm.Process();
+		
 //		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pepsi.wav","Pepsi", new ShowResulter()));
 	//	stm.AddCapturer(new Capturer("d:\\temp\\patterns\\axe1.wav","Axe", new ShowResulter()));
 	//	stm.AddCapturer(new Capturer("d:\\temp\\patterns\\axe2.wav","Axe", new ShowResulter()));

@@ -52,11 +52,14 @@ public class Streamer implements Frequencier.Catcher
 	private long time_ = 0;
 	Vector<Listener> listeners_= new Vector<Listener>();
 	
+	
+	
 	HashMap<Capturer, Integer> indexes_ = new HashMap<Capturer, Integer>();
 	private double minFrequency_ = 999999999;
 	private double maxFrequency_ = 0;
 
 	Source source_;
+	
 	public Streamer() throws Exception
 	{
 		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);
@@ -64,23 +67,19 @@ public class Streamer implements Frequencier.Catcher
 		TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
 		line.open(format);
 		line.start(); 
-		
 		source_ = new Source(new AudioInputStream(line));
-		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL,new Frequencier(this));
-		source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(this));
 	}
 	
-	public void AddCapturer(FingerPrint fp)
+	public void AddFingerPrint(FingerPrint fp)
 	{
 		if (fp.Size() == 0) return;
-		minFrequency_ = Math.min(fp.MinFrequency() * 0.9, minFrequency_);
-		maxFrequency_ = Math.max(fp.MaxFrequency() * 1.1, maxFrequency_) ;
 		fingerPrints_.add(fp);
 	}
 	
 	public void Process()
 	{
-		System.out.printf("start at %s\n",Utils.Time(System.currentTimeMillis()));
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL,new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter())));
+		source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter())));
 		while (source_.Read())
 		{
 			
@@ -181,7 +180,9 @@ public class Streamer implements Frequencier.Catcher
 	{
 		time_+=timeoffset;
 	//	Utils.Dbg("frequency: %.03f - %d\t%d",frequency, time_, System.currentTimeMillis() -  ts);
-		processCapturers(frequency);
+	//	processCapturers(frequency);
+		
+		
 		
 		
 		return true;
