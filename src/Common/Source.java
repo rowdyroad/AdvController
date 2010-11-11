@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 
 public class Source {
@@ -55,7 +54,7 @@ public class Source {
 	
 	public interface AudioReceiver
 	{
-		public void OnSampleReceived(double db);
+		public void OnSamplesReceived(double[] db);
 	}
 	
 
@@ -103,11 +102,12 @@ public class Source {
 
 	public Boolean Read()
 	{
-		byte[] b = new byte[frameSize_];	
+		byte[] b = new byte[frameSize_ * Config.Instance().WindowSize()];	
 		int c;
 		try
 		{
 			c = stream_.read(b);
+			Utils.Dbg("%d received:%d",System.currentTimeMillis(),c);
 			
 			if (c ==-1)
 			{
@@ -116,21 +116,26 @@ public class Source {
 		}
 		catch (IOException e)
 		{
+			e.printStackTrace();
 			return false;
 		}
 		
-		double left = 0, right = 0;
+		double[] left = new double[c / frameSize_];
+		double[] right = new double[c / frameSize_];
+	
 		
-		if (channels_ == 2)
+		for (int i = 0, j = 0; i < c; i+=frameSize_, ++j)
 		{
-			left = convertFromAr(b, 0,1);
-			right = convertFromAr(b, 2,3);
+			if (channels_ == 2)
+			{
+				left[j] = convertFromAr(b, i, i + 1);
+				right[j] = convertFromAr(b, i + 2,i + 3);
+			}
+			else
+			{
+				left[j] = right[j] = convertFromAr(b, i,i+1);
+			}
 		}
-		else
-		{
-			left = right = convertFromAr(b, 0,1);
-		}
-		
 		
 		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
 		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
@@ -139,7 +144,7 @@ public class Source {
 		{
 			for (int i = 0; i < left_recv.size(); ++i)
 			{
-				left_recv.get(i).OnSampleReceived(left);
+				left_recv.get(i).OnSamplesReceived(left);
 			}
 		}
 
@@ -147,7 +152,7 @@ public class Source {
 		{
 			for (int i = 0; i < right_recv.size(); ++i)
 			{
-				right_recv.get(i).OnSampleReceived(right);
+				right_recv.get(i).OnSamplesReceived(right);
 			}
 		}
 		return true;

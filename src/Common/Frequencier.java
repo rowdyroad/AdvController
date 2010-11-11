@@ -1,7 +1,6 @@
 package Common;
 
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -11,8 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
 
 public class Frequencier implements Source.AudioReceiver {
 
@@ -42,30 +39,48 @@ public class Frequencier implements Source.AudioReceiver {
 	Map<Double, Double> gistogram = new HashMap<Double,Double>();
 	
 	@Override
-	public void OnSampleReceived(double db) 
+	public void OnSamplesReceived(double[] db) 
 	{
-		buf_[index_++] = db;
-		
-		if (index_ >= Config.Instance().WindowSize())
+		if (db.length < Config.Instance().WindowSize())
 		{
-			try
-			{
-				Frequency[] data = iterate(buf_);
-				if (! catcher_.OnReceived(data, overlapped_length_))
-				{
-						return;	
-				}
-				
-				index_ = Config.Instance().WindowSize()  - overlapped_length_;
-				System.arraycopy(buf_, overlapped_length_, buf_, 0, index_);
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-				return;
-			}
+			double[] newdb =  new double[Config.Instance().WindowSize()];
+			Arrays.fill(newdb, 0);
+			System.arraycopy(db,0, newdb, 0, db.length);
+			db = newdb;
 		}
 		
+		int db_len = db.length;
+		int db_index = 0;
+		
+		while (db_len > 0)
+		{
+			int len = db.length - index_;
+
+			System.arraycopy(db, db_index, buf_, index_, len);
+			index_+=len;
+			db_index += len;
+			db_len-=len;
+			
+			if (index_ == Config.Instance().WindowSize())
+			{
+				try
+				{
+					Frequency[] data = iterate(buf_);
+					if (! catcher_.OnReceived(data, overlapped_length_))
+					{
+							return;	
+					}
+					
+					index_ = Config.Instance().WindowSize()  - overlapped_length_;
+					System.arraycopy(buf_, overlapped_length_, buf_, 0, index_);
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					return;
+				}
+			}
+		}
 	}	
 
 	
@@ -97,8 +112,7 @@ public class Frequencier implements Source.AudioReceiver {
 		{
 				map.put(data[i], (int)(i *srps));
 		}	
-			
-		if (map.firstKey() < 0.0005) return new Frequency[0];
+		if (map.firstKey() < Common.Config.Instance().NoiseGate()) return new Frequency[0];
 		
 		Iterator<Entry<Double, Integer>> it = map.entrySet().iterator();
 		

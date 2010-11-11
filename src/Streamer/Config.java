@@ -1,5 +1,7 @@
 package Streamer;
 
+import Common.Utils;
+
 public class Config {
 
 	static private Config instance_ = null;
@@ -13,23 +15,22 @@ public class Config {
 		return instance_;
 	}
 	
-	private String external_program_;
-	private double gistogram_equivalency_;
-	private double fingerprint_equivalency_ ;
-	private int unequal_window_;
+	private String external_program_ = new String();;
+	private double fingerprint_equivalency_ = 0.9 ;
 	private String promos_path_;
 	private Config()
 	{
-		external_program_ = Common.Config.Instance().GetProperty("external_program", "");
-		promos_path_ = Common.Config.Instance().GetProperty("promos_path", "");
-		if (!promos_path_.isEmpty() && ! promos_path_.endsWith(System.getProperty("file.separator")))
+		try
 		{
-			promos_path_ += System.getProperty("file.separator");
+			external_program_ = Common.Config.Instance().GetProperty("external_program", "");
+			promos_path_ = Common.Config.Instance().GetProperty("promos_path", ".");
+			promos_path_ = (promos_path_.isEmpty()) ? "./" : Utils.CompletePath(promos_path_);
+			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("fingerprint_equivalency", "0.9"));
+		} 
+		catch (Exception e)
+		{
+			
 		}
-		
-		gistogram_equivalency_  = Double.parseDouble(Common.Config.Instance().GetProperty("gistogram_equivalency", "1"));
-		fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("fingerprint_equivalency", "0.75"));
-		unequal_window_ = Integer.parseInt(Common.Config.Instance().GetProperty("unequal_window", "4"));
 	}
 	
 	public  String ExternalProgram()
@@ -40,19 +41,9 @@ public class Config {
 	{
 		return promos_path_;
 	}
-	
-	public double GistogramEquivalency()
-	{
-		return gistogram_equivalency_;
-	}
 	public double FingerPrintEquivalency()
 	{
 		return fingerprint_equivalency_;
-	}
-	
-	public double UnequalWindow()
-	{
-		return unequal_window_;
 	}
 	
 }

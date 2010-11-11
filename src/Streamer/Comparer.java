@@ -1,27 +1,15 @@
 package Streamer;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
-
-
-import Common.Config;
 import Common.FingerPrint;
 import Common.Gistogram;
 import Common.Utils;
@@ -74,8 +62,6 @@ public class Comparer implements Catcher{
 	}
 	
 	private Vector<FingerPrint> fingerPrints_ = null;
-	private Vector<FingerPrintWrapper> waiters_ = new Vector<FingerPrintWrapper>();
-	private List<FingerPrintWaiter> fpw = new LinkedList<FingerPrintWaiter>();
 	private Resulter resulter_ = null;
 	
 	public Comparer(Vector<FingerPrint> fingerPrints, Resulter resulter)
@@ -107,9 +93,9 @@ public class Comparer implements Catcher{
 	Map<FingerPrint, LinkedList<FW>> waiters = new TreeMap<FingerPrint,LinkedList<FW>>();
 	
 	@Override
-	public boolean OnReceived(Frequency[] frequency, long timeoffset) {
-		if (frequency.length == 0)
-			return true;
+	public boolean OnReceived(Frequency[] frequency, long timeoffset) 
+	{		
+		if (frequency.length == 0) return true;
 
 		for (int i = 0; i < fingerPrints_.size(); ++i) {
 			FingerPrint fp = fingerPrints_.get(i);
@@ -166,7 +152,7 @@ public class Comparer implements Catcher{
 			double ev = (! list.isEmpty()) ? (double) list.getFirst().periods.size() / fp.Count() : 0;
 			Utils.Dbg("%s - %f", fp.Id(),  ev);	
 			
-			if (ev >= 0.9)
+			if (ev >= Config.Instance().FingerPrintEquivalency())
 			{
 				if (resulter_ != null)
 				{

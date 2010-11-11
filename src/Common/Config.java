@@ -6,16 +6,13 @@ public class Config {
 	
 	private int sample_rate_ = 44100;
 	private int window_size_ = 4096;
-	private int overlapped_coef_ = 8;
+	private int overlapped_coef_ = 4;
 	private int levels_count_= 5;
 	private int min_frequency_ = 50;
 	private int max_frequency_ = 20050;
-	
+	private double noise_gate_ = 0.0005;
 	private static Config instance_ = null;
 	public static String Filename = "soas.ini";
-	
-	private boolean loaded_ = false;
-	
 	private Properties properties_;
 	
 	static public Config Instance()
@@ -36,7 +33,6 @@ public class Config {
 	private void Load(String filename)
 	{
 		  try{
-			  loaded_ = true;
 		      Properties p = new Properties();
 		      properties_ = p;
 		      p.load(new FileInputStream(filename));
@@ -46,6 +42,7 @@ public class Config {
 		      levels_count_ = Integer.valueOf(p.getProperty("levels_count","5"));
 		      min_frequency_ = Integer.decode(p.getProperty("min_frequency","20"));
 		      max_frequency_ = Integer.decode(p.getProperty("max_frequency","20000"));
+			 noise_gate_ = Double.parseDouble(p.getProperty("noise_gate","0.0005"));
 		  }
 		 catch (Exception e) 
 		 {
@@ -53,6 +50,11 @@ public class Config {
 		  }
 	}
 	
+	
+	public double NoiseGate()
+	{
+		return noise_gate_;
+	}
 	public int SampleRate()
 	{
 		return sample_rate_;
@@ -67,6 +69,7 @@ public class Config {
 	{
 		return overlapped_coef_;
 	}
+	
 	
 	public int LevelsCount()
 	{

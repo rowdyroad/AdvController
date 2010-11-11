@@ -52,4 +52,14 @@ public class Utils
 		}
 		
 		
+		static public String CompletePath(String path)
+		{
+			if (!path.isEmpty() && ! path.endsWith(System.getProperty("file.separator")))
+			{
+				path += System.getProperty("file.separator");
+			}
+			return path;
+		}
+		
+		
 }

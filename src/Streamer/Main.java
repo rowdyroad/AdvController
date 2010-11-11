@@ -1,14 +1,8 @@
 package Streamer;
 
 import java.io.File;
-import java.math.BigDecimal;
-import java.util.Vector;
-
-import Capturer.Capturer;
 import Common.FingerPrint;
 import Common.Utils;
-
-
 
 class Main {
 
@@ -25,6 +19,7 @@ public static void main (String args []) throws Exception {
 	Streamer stm = new Streamer();
 	String list[] = new File(Config.Instance().PromosPath()).list();
 
+	
 	for(int i = 0; i < list.length; i++)
 	{
 		try
@@ -38,6 +33,11 @@ public static void main (String args []) throws Exception {
 		}
 	} 
 	
+	if (stm.Count() ==0)
+	{
+		Utils.Dbg("Hasn't found any finger print. Nothing to compare");
+		System.exit(1);
+	}
 	stm.Process();
 		
 //		stm.AddCapturer(new Capturer("d:\\temp\\patterns\\pepsi.wav","Pepsi", new ShowResulter()));

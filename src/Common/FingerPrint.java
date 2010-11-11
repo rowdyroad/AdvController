@@ -2,7 +2,6 @@ package Common;
 
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -14,11 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.Vector;
 import java.util.Collections;;
 
@@ -55,18 +50,6 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			this.frequency = frequency;
 			this.begin = begin;
 		}
-		
-		/*@Override
-		public boolean equals(Object obj)
-		{
-			Period p = (Period)obj;
-			return 
-					p.frequency.compareTo(frequency) == 0 
-					&& p.begin.compareTo(begin) ==0
-					&& p.end.compareTo(end) ==0;
-				
-		}*/
-
 	}
 	
 	
@@ -100,14 +83,8 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	}
 	
 	private String id_;
-	private long time_ = 0;
 	private Vector<Record> vector_ = new Vector<Record>();
-	private double min_ = Double.MAX_VALUE;
-	private double max_ = Double.MIN_VALUE;
-
 	private int count_ = 0;
-	
-	
 	public FingerPrint(String id)
 	{
 		id_ = id; 
@@ -117,15 +94,6 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 
 	public String Id() { return id_; }
 	
-	public double MinFrequency()
-	{
-		return min_;
-	}
-	
-	public long Time()
-	{
-		return time_;
-	}
 	
 	public Vector<Period> Exists(long time, Frequency[] frequency)
 	{
@@ -137,7 +105,6 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			str+=String.format("%d \t", frequency[i].frequency);
 			fv.set(i, frequency[i].frequency);
 		}
-	//	Utils.Dbg(str);
 		Vector<Period> vector = new Vector<Period>();
 		
 		for (Period p : periodsByTime_)
@@ -160,17 +127,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		
 		return vector; 
 	}
-	
-	public double MaxFrequency()
-	{
-		return max_;
-	}
- 
-	public int Size()
-	{
-		return vector_.size();
-	}
-	
+		
 	private int totalPeriods_ = 0;
 	private int totalCounts_ = 0;
 	
