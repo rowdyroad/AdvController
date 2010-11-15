@@ -1,13 +1,12 @@
 package Common;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
-
-import javax.sound.sampled.AudioInputStream;
 
 public class Source {
 
@@ -50,7 +49,7 @@ public class Source {
 	}
 	
 	
-	private AudioInputStream stream_;
+	private InputStream stream_;
 	
 	public interface AudioReceiver
 	{
@@ -67,18 +66,21 @@ public class Source {
 	private int frameSize_;
 	private int channels_;
 	private double scale_;
-	
-	public Source(AudioInputStream stream) throws Exception
+	private boolean isBigEndian_;
+	private int readChunkSize_;
+	private byte[] cache_;;
+	private int cache_len_ = 0;	
+	public Source(InputStream stream, int channels, int samplesize, boolean isBigEndian) throws Exception
 	{
-		if (stream.getFormat().getChannels() > 2) throw new SourceException(SourceException.ErrorType.CHANNELS);
-		if (stream.getFormat().getSampleRate() != Config.Instance().SampleRate()) throw new SourceException(SourceException.ErrorType.SAMPLE_RATE);
-		if (stream.getFormat().getSampleSizeInBits() != 16) throw new SourceException(SourceException.ErrorType.SAMPLE_SIZE);
-
+		Utils.Dbg("channels:%d, samplesize:%d ", channels, samplesize);
 		stream_ = stream;
-		frameSize_ = stream_.getFormat().getFrameSize();
-		channels_ = stream_.getFormat().getChannels();
-		scale_ = 1.0 / ((double) stream.getFormat().getChannels() * (1 << (stream.getFormat().getSampleSizeInBits() - 1)));
-		
+		frameSize_ = channels * samplesize / 8;
+		channels_ = channels;
+		isBigEndian_ = isBigEndian;
+		scale_ = 1.0 / ((double) channels * (1 << (samplesize - 1)));
+		readChunkSize_ = frameSize_ * Common.Config.Instance().WindowSize();
+		Utils.Dbg("framesize:%d windowSize:%d overlapping:%d",frameSize_, Common.Config.Instance().WindowSize(), Common.Config.Instance().WindowSize() / Common.Config.Instance().OverlappedCoef());
+		cache_ = new byte[readChunkSize_];
 	}
 	
 	
@@ -96,44 +98,27 @@ public class Source {
 	private double convertFromAr(byte[] b, int start, int end)
 	{
 		 ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
-		 buf.order(stream_.getFormat().isBigEndian() ? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
+		 buf.order(isBigEndian_? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
 		 return (double)buf.getShort() * scale_;
 	}
-
-	public Boolean Read()
-	{
-		byte[] b = new byte[frameSize_ * Config.Instance().WindowSize()];	
-		int c;
-		try
-		{
-			c = stream_.read(b);
-			Utils.Dbg("%d received:%d",System.currentTimeMillis(),c);
-			
-			if (c ==-1)
-			{
-				return false;
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-			return false;
-		}
-		
-		double[] left = new double[c / frameSize_];
-		double[] right = new double[c / frameSize_];
 	
+
+	
+	private void process(byte[] buf, int len)
+	{
+		double[] left = new double[len / frameSize_];
+		double[] right = new double[len / frameSize_];
 		
-		for (int i = 0, j = 0; i < c; i+=frameSize_, ++j)
+		for (int i = 0, j = 0; i < len; i+=frameSize_, ++j)
 		{
 			if (channels_ == 2)
 			{
-				left[j] = convertFromAr(b, i, i + 1);
-				right[j] = convertFromAr(b, i + 2,i + 3);
+				left[j] = convertFromAr(buf, i, i + 1);
+				right[j] = convertFromAr(buf, i + 2,i + 3);
 			}
 			else
 			{
-				left[j] = right[j] = convertFromAr(b, i,i+1);
+				left[j] = right[j] = convertFromAr(buf, i,i+1);
 			}
 		}
 		
@@ -155,10 +140,69 @@ public class Source {
 				right_recv.get(i).OnSamplesReceived(right);
 			}
 		}
+	}
+	int readed = 0;
+	public Boolean Read()
+	{
+		byte[] b = new byte[readChunkSize_];		
+		while (true)
+		{
+			try
+			{
+				int ret = stream_.read(b);
+				if (ret == -1 ) 
+				{
+					if (cache_len_> 0) 
+					{
+						process(cache_, cache_len_);
+					}
+					return false;
+				}
+				
+				readed+=ret;
+				if (ret < readChunkSize_ || cache_len_  > 0)
+				{
+					int len2cache = Math.min(readChunkSize_ - cache_len_, ret);
+					System.arraycopy(b, 0, cache_, cache_len_, len2cache);
+					cache_len_+= len2cache;
+					if (cache_len_ == readChunkSize_)
+					{
+						process(cache_,cache_len_);
+						if (len2cache < ret)
+						{
+							cache_len_ = ret - len2cache;
+							System.arraycopy(b,len2cache, cache_,0, cache_len_);
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+				else
+				{
+					process(b,ret);
+					return true;
+				}
+			}
+			catch (IOException e)
+			{
+				if (cache_len_ > 0)
+				{
+					process(cache_,cache_len_);
+				}
+				e.printStackTrace();
+				return false;
+			}
+		}
+		
 		return true;
+		
+		
+	
 	}
 	
-	public AudioInputStream Stream()
+	public InputStream Stream()
 	{
 		return stream_;
 	}

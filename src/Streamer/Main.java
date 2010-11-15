@@ -17,6 +17,8 @@ public static void main (String args []) throws Exception {
 	}
 
 	Streamer stm = new Streamer();
+	
+	
 	String list[] = new File(Config.Instance().PromosPath()).list();
 
 	
@@ -29,7 +31,7 @@ public static void main (String args []) throws Exception {
 		}
 		catch (Exception e)
 		{
-			
+			e.printStackTrace();
 		}
 	} 
 	

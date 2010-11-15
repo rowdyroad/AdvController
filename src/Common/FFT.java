@@ -1,5 +1,7 @@
 package Common;
 
+import Common.AltFFT.Complex;
+
 
 /**
  * Class for computing a windowed fast Fourier transform.
@@ -105,16 +107,28 @@ public final class FFT
     }
 
   }
+  
+  
+  
 
-  public void transform(double[] re, double[] im)
+  public double[] transform(double[] buf, double[] im)
   {
     //check for correct size of the real part data array
-    if(re.length < windowSize)
+    if(buf.length < windowSize)
       throw new IllegalArgumentException("data array smaller than fft window size");
-
+    
+    double[] re =new double[buf.length];    
+    System.arraycopy(buf,0, re,0,buf.length);
     //apply the window function to the real part
-    applyWindowFunction(re);
+  //  applyWindowFunction(re);
 
+    for (int i =0; i < buf.length; ++i)
+	{
+		double w = 2*Math.PI*i / buf.length;
+		re[i] =  buf[i] * (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
+	}
+	
+    
     //perform the transformation
     switch(transformationType)
     {
@@ -159,6 +173,8 @@ public final class FFT
           fft(re, im, FFT_REVERSE);
         break;
     }
+    
+    return re;
   }
 
 

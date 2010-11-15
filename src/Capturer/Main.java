@@ -9,31 +9,35 @@ import Common.Utils;
 
 public class Main {
 
-	public static void main (String args [])  {	
+	public static void main (String args [])  {
+
 		if (args.length < 2)
 		{
-			Utils.Dbg("Usage: %s <wav_file> <promo_id>", Main.class.getName());
+			Utils.Dbg("Usage: %s [<config_file>] <wav_file> <promo_id>", Main.class.getName());
 			System.exit(1);
 		}
 		
-		String wav_file, promo_id;
+	
+		int begin = 0;
 		
-		if (args.length == 2)
+		if (args.length %  2 != 0)
 		{
-			wav_file = args[0];
-			promo_id = args[1];
-		}
-		else
-		{
+			begin = 1;
 			Common.Config.Filename = args[0];
-			wav_file = args[1];
-			promo_id = args[2];
 		}
 
 		try
 		{
-			Capturer capt = new Capturer(wav_file,  promo_id);
-			capt.Process().Serialize(Config.Instance().Storage()+promo_id);			 
+			Utils.Dbg("Files to convert: %d", args.length / 2);
+			
+			for (int i = begin; i < args.length; i+=2)
+			{
+				String wav_file = args[i];
+				String promo_id = args[i+1];
+				Utils.Dbg("Filename:%s PromoID:%s", wav_file, promo_id);	
+				Capturer capt = new Capturer(wav_file,  promo_id);
+				capt.Process().Serialize(Config.Instance().Storage()+promo_id);
+			}
 		}
 		catch (Source.SourceException e)
 		{
@@ -56,7 +60,5 @@ public class Main {
 			e.printStackTrace();
 			System.exit(5);
 		}
-		
-		
 	}
 }

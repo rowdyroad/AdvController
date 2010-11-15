@@ -20,18 +20,7 @@ import java.util.Collections;;
 public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 
 	private static final long serialVersionUID = 8559602924873961446L;
-	public class Record implements Serializable
-	{
-		private static final long serialVersionUID = 8201562766910455351L;
-		public long timeoffset;
-		public Gistogram gistogram;
-		
-		public Record(long timeoffset, Gistogram gistogram)
-		{
-			this.timeoffset = timeoffset;
-			this.gistogram = gistogram;
-		}
-	};
+
 	public Map<Integer, LinkedList<Period>> totals_  = new TreeMap<Integer, LinkedList<Period>>();;
 	public List<Period> periodsByTime_;
 	public List<Period> periodsByCount_;	
@@ -40,15 +29,15 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	{
 		private static final long serialVersionUID = -107614039539312946L;
 		
-		public Integer frequency;
-		public Integer begin;
-		public Integer end = 0;
+		public Frequency frequency;
+		public Long begin;
+		public Long end = new Long(0);
 		public Integer count = 1;
 		
-		public Period(Integer frequency, Integer begin)
+		public Period(Frequency frequency, Long begin)
 		{
 			this.frequency = frequency;
-			this.begin = begin;
+			this.begin =  begin;
 		}
 	}
 	
@@ -59,7 +48,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 
 		@Override
 		public int compare(Period arg0, Period arg1) {
-			return arg0.frequency.compareTo(arg1.frequency);
+			return arg0.frequency.frequency.compareTo(arg1.frequency.frequency);
 		}		
 	}
 	
@@ -83,11 +72,17 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	}
 	
 	private String id_;
-	private Vector<Record> vector_ = new Vector<Record>();
 	private int count_ = 0;
-	public FingerPrint(String id)
+	private long time_;
+	
+	public long Time()
+	{
+		return time_;
+	}
+	public FingerPrint(String id, long time)
 	{
 		id_ = id; 
+		time_ = time;
 		periodsByTime_ = new LinkedList<Period>();
 		periodsByCount_ = new LinkedList<Period>();
 	}
@@ -97,12 +92,27 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	
 	public Vector<Period> Exists(long time, Frequency[] frequency)
 	{
-		Vector<Integer> fv = new Vector<Integer>();
-		fv.setSize(frequency.length);
-		String str =new String(String.format("%d\t", time));
+		Vector<Period> vector = new Vector<Period>();
+		for (int i = 0; i < frequency.length; ++i)
+		{				
+			for (Period p : periodsByTime_)
+			{
+				if (p.begin <= time && time <= p.end)
+				{
+						if (Math.abs(frequency[i].frequency - p.frequency.frequency) <= 4)
+						{
+							//Utils.Dbg("Compared %d[%d]  %d/[%d-%d]" ,frequency[i].frequency, p.frequency, time, p.begin,p.end );
+							vector.add(p);
+							break;
+						}
+					}
+				}
+		}
+		
+		//Utils.Dbg("Compared %d", vector.size());
+		/*fv.setSize(frequency.length);
 		for (int i =0; i < frequency.length; ++i)
 		{
-			str+=String.format("%d \t", frequency[i].frequency);
 			fv.set(i, frequency[i].frequency);
 		}
 		Vector<Period> vector = new Vector<Period>();
@@ -114,16 +124,16 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			//	Utils.Dbg("%d [%d - %d]", p.frequency, p.begin, p.end);
 				for (int i = 0; i < fv.size(); ++i)
 				{
-					if (fv.get(i).compareTo(p.frequency) == 0)
+					if (Math.abs(fv.get(i) - p.frequency) <= 4)
 					{
-				//		Utils.Dbg("Compared:%d", p.frequency);
+						Utils.Dbg("Compared %d[%d]  %d/[%d-%d]" ,fv.get(i), p.frequency, time, p.begin,p.end );
 						vector.add(p);
 						fv.removeElementAt(i);
 						break;
 					}
 				}
 			}
-		}
+		}*/
 		
 		return vector; 
 	}
@@ -140,49 +150,32 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		Collections.sort(periodsByTime_, new PeriodByTime());
 		periodsByCount_.add(period);
 		Collections.sort(periodsByCount_, new PeriodByCount());
-		LinkedList<Period> vp = totals_.get(period.frequency);
+		LinkedList<Period> vp = totals_.get(period.frequency.frequency);
 		
 		if (vp == null)
 		{
 			vp = new LinkedList<Period>();
 			vp.add(period);
 			++count_;
-			totals_.put(period.frequency, vp);
+			totals_.put(period.frequency.frequency, vp);
 		}
 		else
 		{
-			Period lp = vp.getLast();
-			if (period.begin - lp.end  < Config.Instance().WindowSize())
+		/*	Period lp = vp.getLast();
+			if (period.begin - lp.end  < Config.Instance().WindowSize() )
 			{
 				lp.end = period.end;
 				lp.count += period.count;
 			}
 			else
-			{
+			{*/
 				vp.add(period);
 				++count_;
-			}
+		//	}
 		}
 		return period;
 	}
-	
-	public Record Get(int i)
-	{
-		try
-		{
-			return vector_.get(i);
-		}
-		catch (Exception e)
-		{
-			return null;
-		}
-	}
-	
-	public Vector<Record> Items()
-	{
-		return vector_;
-	}
-	
+
 	public int Count()
 	{
 		return periodsByTime_.size();
@@ -199,9 +192,48 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		oos.close();
 	}
 	 
+	 public Vector<LinkedList<Period>> vector_;
+	 
+	 double max = 0;
+	 double min = Double.MAX_VALUE;
+	 
+	 public void Set(Vector<LinkedList<Period>> vector)
+	 {
+		 vector_ = vector;
+		 
+	 }
+	 
  	 public void ThinOut()
  	 { 
- 		periodsByTime_.clear();
+ 		 
+ 		 
+ 		/*for (Period p : periodsByTime_)
+ 		{
+ 			max =Math.max(max, p.frequency.level.doubleValue());
+			min = Math.min(min, p.frequency.level.doubleValue());
+ 		}
+ 		
+ 		Iterator<Period> it = periodsByTime_.iterator();
+ 		
+ 		double mean = (max + min) / 2;
+ 		Utils.Dbg("mean:%f  max:%f min:%f",mean,max,min);
+ 		while (it.hasNext())
+ 		{
+ 			Period p = it.next();
+ 			
+ 			if (p.frequency.level.doubleValue() < mean)
+ 			{
+ 				it.remove();
+ 			}
+ 		}*/
+ 		
+ 		for (Period p : periodsByTime_)
+ 		{
+ 			Utils.Dbg("%d [%d - %d] - %f", p.frequency.frequency, p.begin, p.end, p.frequency.level);
+ 		}
+ 		
+ 		 
+ 		/*periodsByTime_.clear();
  		int M = (int) Math.ceil((double)totalCounts_ / totalPeriods_);
  		Utils.Dbg("%d",M);
  		{
@@ -213,15 +245,20 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 				Iterator<Period> pit = ps.iterator();
 				while (pit.hasNext())
 				{
-					Period p = pit.next();			
+					Period p = pit.next();
+					
+					max =Math.max(max, p.frequency.level.doubleValue());
+					min = Math.min(min, p.frequency.level.doubleValue());
+					
+					
 					if (p.count <= M )
 					{
 						pit.remove();
 					}
 					else
 					{
-							p.begin =  (int)Math.floor((double)p.begin  / Config.Instance().WindowSize()) * Config.Instance().WindowSize();
-							p.end = (int)Math.ceil((double)p.end  / Config.Instance().WindowSize()) * Config.Instance().WindowSize();
+						//	p.begin =  new Long((long)Math.floor((double)p.begin  / Config.Instance().WindowSize()) * Config.Instance().WindowSize());
+						//	p.end = new Long((long)Math.ceil((double)p.end  / Config.Instance().WindowSize()) * Config.Instance().WindowSize());
 							periodsByTime_.add(p);
 					}
 				}
@@ -248,6 +285,11 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 				}
 			}
 		}
+		
+		Utils.Dbg("Max:%f Min:%f", max, min);
+		*/
+		
+		
 	 }
 	 
 	@Override
@@ -269,7 +311,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 				while (pit.hasNext())
 				{
 					Period p = pit.next();
-					str+=String.format("\t%d - %d  [%d]\n", p.begin, p.end, p.count);
+					str+=String.format("\t%d - %d  [%d] %f\n", p.begin, p.end, p.count,p.frequency.level);
 				}
 			}
 			str+="\n";
@@ -281,7 +323,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			while (it.hasNext())
 			{
 				Period p = it.next();
-				str+=String.format("%d  [%d - %d] [%d]\n", p.frequency, p.begin, p.end, p.count);
+				str+=String.format("%d  [%d - %d] [%d] %f\n", p.frequency.frequency, p.begin, p.end, p.count,p.frequency.level);
 			}
 			
 		}

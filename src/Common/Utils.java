@@ -34,7 +34,7 @@ public class Utils
 		{
 			for (int i =0; i < frequency.length; ++i)
 			{
-				Utils.Dbg("%d %f", frequency[i].frequency, frequency[i].level);
+				Utils.Dbg("%d; %f;", frequency[i].frequency, frequency[i].level);
 			}
 			Utils.Dbg("");
 		}
