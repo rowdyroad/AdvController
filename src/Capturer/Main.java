@@ -32,11 +32,14 @@ public class Main {
 			
 			for (int i = begin; i < args.length; i+=2)
 			{
+				long time = System.currentTimeMillis();
 				String wav_file = args[i];
 				String promo_id = args[i+1];
-				Utils.Dbg("Filename:%s PromoID:%s", wav_file, promo_id);	
+				Utils.Dbg("Filename: %s PromoID: %s", wav_file, promo_id);	
 				Capturer capt = new Capturer(wav_file,  promo_id);
 				capt.Process().Serialize(Config.Instance().Storage()+promo_id);
+				Utils.Dbg("Time to work: %d ms", System.currentTimeMillis() - time);
+			
 			}
 		}
 		catch (Source.SourceException e)

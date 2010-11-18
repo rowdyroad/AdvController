@@ -101,24 +101,45 @@ public class AltFFT {
 	        return sum;
 	    }
 	}
+		
 	
-		public static double[] transform(double[] data)
+		public static double[] window(double[] data)
 		{
-			Complex[] x = new Complex[data.length];
+			double[] x = new double[data.length];
 			for (int i =0; i < data.length; ++i)
 			{
 				double w = 2*Math.PI*i / data.length;
-				double n =  data[i] * (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
-				x[i] = new Complex(n, 0);
+				x[i] =  data[i] * (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
 			}
-			
-			Complex[] res = fft(x);
-			double[] ret = new double[res.length];
+			return x;
+		}
+		
+		public static void transform(double[] data)
+		{
+			Complex[] z = new Complex[data.length];
+			for (int i = 0; i < data.length; ++i)
+			{
+				z[i] = new Complex(data[i],0);				
+			}
+			Complex[] res = fft(z);
 			for (int i=0; i < res.length; ++i)
 			{
-				ret[i] = Math.sqrt(res[i].re() * res[i].re());
+				data[i] = Math.sqrt(res[i].re() * res[i].re());
 			}
-			return ret;
+		}
+		
+		public static void transform(double [] data, int start, int length)
+		{
+			Complex[] z = new Complex[length];
+			for (int i = 0; i <length; ++i)
+			{
+				z[i] = new Complex(data[start + i], 0);				
+			}
+			Complex[] res = fft(z);
+			for (int i=0; i < res.length; ++i)
+			{
+				data[start + i] = Math.sqrt(res[i].re() * res[i].re());
+			}
 		}
 	    // compute the FFT of x[], assuming its length is a power of 2
 	    public static Complex[] fft(Complex[] x) {

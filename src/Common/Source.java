@@ -64,27 +64,22 @@ public class Source {
 	}
 	
 	private int frameSize_;
-	private int channels_;
-	private double scale_;
-	private boolean isBigEndian_;
 	private int readChunkSize_;
 	private byte[] cache_;;
 	private int cache_len_ = 0;	
-	public Source(InputStream stream, int channels, int samplesize, boolean isBigEndian) throws Exception
+	private Settings settings_;
+	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
+	
+	public Source(InputStream stream, Settings settings) throws Exception
 	{
-		Utils.Dbg("channels:%d, samplesize:%d ", channels, samplesize);
 		stream_ = stream;
-		frameSize_ = channels * samplesize / 8;
-		channels_ = channels;
-		isBigEndian_ = isBigEndian;
-		scale_ = 1.0 / ((double) channels * (1 << (samplesize - 1)));
-		readChunkSize_ = frameSize_ * Common.Config.Instance().WindowSize();
-		Utils.Dbg("framesize:%d windowSize:%d overlapping:%d",frameSize_, Common.Config.Instance().WindowSize(), Common.Config.Instance().WindowSize() / Common.Config.Instance().OverlappedCoef());
+		frameSize_ = settings.Channels() * settings.SampleSize();
+		readChunkSize_ = frameSize_ * settings.WindowSize();
 		cache_ = new byte[readChunkSize_];
+		settings_ = settings;
 	}
 	
 	
-	Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
 	
 	public void RegisterAudioReceiver(Channel channel, AudioReceiver receiver)
 	{
@@ -98,29 +93,28 @@ public class Source {
 	private double convertFromAr(byte[] b, int start, int end)
 	{
 		 ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
-		 buf.order(isBigEndian_? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
-		 return (double)buf.getShort() * scale_;
-	}
-	
-
+		 buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
+		 return (double)buf.getShort() / Short.MAX_VALUE;
+	} 
 	
 	private void process(byte[] buf, int len)
 	{
 		double[] left = new double[len / frameSize_];
 		double[] right = new double[len / frameSize_];
-		
+
 		for (int i = 0, j = 0; i < len; i+=frameSize_, ++j)
 		{
-			if (channels_ == 2)
+			if (settings_.Channels() == 2)
 			{
 				left[j] = convertFromAr(buf, i, i + 1);
 				right[j] = convertFromAr(buf, i + 2,i + 3);
 			}
 			else
 			{
-				left[j] = right[j] = convertFromAr(buf, i,i+1);
+				left[j] = right[j] = convertFromAr(buf, i, i+1);
 			}
 		}
+		
 		
 		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
 		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
@@ -141,6 +135,7 @@ public class Source {
 			}
 		}
 	}
+	
 	int readed = 0;
 	public Boolean Read()
 	{

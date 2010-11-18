@@ -12,6 +12,7 @@ import javax.sound.sampled.TargetDataLine;
 
 import Common.FingerPrint;
 import Common.Frequencier;
+import Common.Settings;
 import Common.Source;
 import Common.Source.Channel;
 import Common.Utils;
@@ -19,12 +20,15 @@ import Common.Utils;
 public class Streamer
 {
 	private Vector<FingerPrint> fingerPrints_ = new Vector<FingerPrint>();	
-	Source source_;
+	private Source source_;
+	private Settings settings_;
+	
 	public Streamer() throws Exception
 	{
+		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);
+		settings_ = new Settings(format);
 		try
-		{
-			AudioFormat format =  new AudioFormat(Common.Config.Instance().SampleRate(),16,2, true, false);
+		{	
 			InputStream stream = null;
 			if (Config.Instance().Source() == "soundcard")
 			{
@@ -37,14 +41,14 @@ public class Streamer
 			else
 			{
 				stream = System.in;
-				Utils.Dbg("stdin");
-				Utils.Dbg(stream);
 			}
+			
 			if (stream ==null)
 			{
 				throw new Exception(String.format("Incorrect source %s", Config.Instance().Source()));
 			}
-			source_ = new Source(stream, format.getChannels(), format.getSampleSizeInBits(), format.isBigEndian());			
+			
+			source_ = new Source(stream, settings_);			
 		}
 		catch (Exception e)
 		{
@@ -54,6 +58,7 @@ public class Streamer
 	
 	public void AddFingerPrint(FingerPrint fp)
 	{
+		Utils.Dbg(fp);
 		fingerPrints_.add(fp);
 	}
 	
@@ -64,8 +69,9 @@ public class Streamer
 	
 	public void Process()
 	{
-		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL,new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter())));
-	//	source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter())));
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter(), settings_), settings_));
+
+		//source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter())));
 		Utils.Dbg("listening...");
 		while (source_.Read())
 		{

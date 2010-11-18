@@ -15,6 +15,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Vector;
 
+import Common.AltFFT.Complex;
+
 public class Frequencier implements Source.AudioReceiver {
 
 	public interface Catcher
@@ -24,24 +26,17 @@ public class Frequencier implements Source.AudioReceiver {
 	}
 	
 	private FFT fft_;	
-	private double [] buf_ = new double[Config.Instance().WindowSize()];
+	private double [] buf_;
 	private int index_ = 0;
 	private Catcher catcher_ = null;
-	private int overlapped_length_;
-	private double frequency_step_;
-	private int process_start_;
-	private int process_stop_;
+	private Settings settings_;
 	
-	
-	public Frequencier(Catcher catcher)
+	public Frequencier(Catcher catcher, Settings settings)
 	{
+		buf_ = new double[settings.WindowSize()];
 		catcher_ = catcher;
-		fft_ = new FFT(FFT.FFT_MAGNITUDE, Config.Instance().WindowSize(), FFT.WND_HAMMING);
-		overlapped_length_ =  Config.Instance().WindowSize() / Config.Instance().OverlappedCoef();
-		frequency_step_ = (double)Config.Instance().SampleRate() / Config.Instance().WindowSize();
-		
-		process_start_ =  (int) (Config.Instance().MinFrequency() / frequency_step_);
-		process_stop_ = (int) (Config.Instance().MaxFrequency() / frequency_step_);
+		fft_ = new FFT(FFT.FFT_MAGNITUDE, settings.WindowSize(), FFT.WND_HAMMING);
+		settings_  = settings;
 	}
 	
 	int time_ = 0;
@@ -49,12 +44,40 @@ public class Frequencier implements Source.AudioReceiver {
 
 	Map<Double, Double> gistogram = new HashMap<Double,Double>();
 	
+	
+	
+	private void convertToFrequency(double[] data, int begin,  Map<Integer, Double> ret)
+	{
+		boolean hasMax = false;
+		int k = Math.round(settings_.SampleRate() / settings_.FFTWindowSize());
+
+		for (int i = settings_.ProcessStart(); i < settings_.ProcessStop();++i)
+		{
+			double diff = data[begin + i+1] - data[begin + i];
+			
+			if (diff < 0 && !hasMax)
+			{
+				int freq = k * i;
+				Double d = ret.get(freq);
+				ret.put(freq, (d == null) ? new Double(data[i]) : d + data[begin + i]);
+				hasMax = true;
+				continue;	
+			}
+		
+			if (diff > 0 && hasMax)
+			{
+				hasMax = false;
+			}
+		}
+	}
+	
+	
 	@Override
 	public void OnSamplesReceived(double[] db) 
 	{
-		if (db.length < Config.Instance().WindowSize())
+		if (db.length < settings_.WindowSize())
 		{
-			double[] newdb =  new double[Config.Instance().WindowSize()];
+			double[] newdb =  new double[settings_.WindowSize()];
 			Arrays.fill(newdb, 0);
 			System.arraycopy(db,0, newdb, 0, db.length);
 			db = newdb;
@@ -72,17 +95,52 @@ public class Frequencier implements Source.AudioReceiver {
 			db_index += len;
 			db_len-=len;
 			
-			if (index_ == Config.Instance().WindowSize())
+			if (index_ == settings_.WindowSize())
 			{
+				double[] windowed = AltFFT.window(buf_);
 				try
 				{
-					Frequency[] data = iterate(buf_);
-					if (! catcher_.OnReceived(data, overlapped_length_))
+					int totals = 0;
+					Map<Integer, Double> freqs = new TreeMap<Integer,Double>();
+					
+					while (totals < windowed.length)
+					{						
+						AltFFT.transform(windowed, totals, settings_.FFTWindowSize());
+						convertToFrequency(windowed, totals, freqs);
+						totals+= settings_.FFTWindowSize();
+					}
+						
+					
+					LinkedList<Frequency> flist = new LinkedList<Frequency>();
+		
+					for (Entry<Integer,Double> kvp: freqs.entrySet())
+					{
+						flist.add(new Frequency(kvp.getKey(), new BigDecimal(kvp.getValue())));
+					}
+					
+					Collections.sort(flist, new Comparator<Frequency>() {
+						@Override
+						public int compare(Frequency arg0, Frequency arg1) {
+							return -arg0.level.compareTo(arg1.level);
+						}});
+					
+					
+					Frequency[] data = new Frequency[Math.min(Common.Config.Instance().LevelsCount(), flist.size())];
+					
+					int i = 0;
+					for (Frequency p: flist)
+					{
+						data[i++] = p;
+						if (i >= Common.Config.Instance().LevelsCount()) break;
+					}
+					
+					if (! catcher_.OnReceived(data, settings_.FFTWindowSize()))
 					{
 							return;	
-					}	
-					index_ = Config.Instance().WindowSize()  - overlapped_length_;
-					System.arraycopy(buf_, overlapped_length_, buf_, 0, index_);
+					}
+						
+					index_ = settings_.WindowSize()  - settings_.OverlappedLength();
+					System.arraycopy(buf_, settings_.OverlappedLength(), buf_, 0, index_);
 				}
 				catch (Exception e)
 				{
@@ -93,41 +151,22 @@ public class Frequencier implements Source.AudioReceiver {
 		}
 	}	
 
-	
 	class DescComparator implements Comparator<Double>
 	{
-
 		@Override
 		public int compare(Double arg0, Double arg1) {
 			if (arg0 < arg1) return 1;
 			if (arg0 > arg1) return -1;
 			return 0;
 		}
-		
 	}
 	
-	
-	private Frequency[]  iterate(double[] buf) throws Exception
+	private Frequency[]  iterate(double[] data) throws Exception
 	{
-		
-		double dbm = Double.NEGATIVE_INFINITY;
-		
-		/*for (int i =0;i<buf.length;++i)
-		{
-			double db = 20*Math.log10(buf[i]);
-			if (Double.isInfinite(db) || Double.isNaN(db)) continue;
-			dbm = Math.max(db, dbm);
-		}
-		
-		if (dbm < -20) return null;
-		*/
-		double[] data = AltFFT.transform(buf);
-		
-		 LinkedList<Frequency> flist = new LinkedList<Frequency>();
-		
-
+		LinkedList<Frequency> flist = new LinkedList<Frequency>();
 		boolean hasMax = false;
-		for (int i = process_start_; i < process_stop_;++i)
+
+		for (int i = settings_.ProcessStart(); i < settings_.ProcessStop();++i)
 		{
 			if (data[i] < 1)  continue;
 
@@ -135,7 +174,9 @@ public class Frequencier implements Source.AudioReceiver {
 			
 			if (diff < 0 && !hasMax)
 			{
-				int freq = ((int)(i*frequency_step_));
+				int freq = ((int)(i*settings_.SampleRate() / settings_.FFTWindowSize()));
+				
+				freq = (int)Math.round((double)freq / 10) * 10;
 				flist.add(new Frequency(freq, new BigDecimal(data[i])));
 				hasMax = true;
 				continue;	
@@ -146,10 +187,7 @@ public class Frequencier implements Source.AudioReceiver {
 				hasMax = false;
 			}
 		}
-		
 		if (flist.isEmpty()) return null;
-		
-		
 		Collections.sort(flist, new Comparator<Frequency>() {
 			@Override
 			public int compare(Frequency arg0, Frequency arg1) {
@@ -157,44 +195,14 @@ public class Frequencier implements Source.AudioReceiver {
 				return -arg0.level.compareTo(arg1.level);
 			} });
 		
-		while (flist.size() > 10) 
+		
+		while (flist.size() > Common.Config.Instance().LevelsCount()) 
 		{
 			flist.removeLast();
 		}
 		Frequency[] ret = new Frequency[flist.size()];
 		flist.toArray(ret);
-		
 		return  ret;
-	/*	
-		SortedMap<Double, Integer> map = new TreeMap<Double, Integer>(new DescComparator());		
-		Frequency[] ret = new Frequency[Config.Instance().LevelsCount()];
-		
-		
-
-	
-		for (int i = start; i <stop; ++i)
-		{
-				map.put(data[i], (int)(i *srps));
-		}	
-		
-		if (map.firstKey() < Common.Config.Instance().NoiseGate()) return new Frequency[0];
-
-		
-		Iterator<Entry<Double, Integer>> it = map.entrySet().iterator();
-		
-	   int i = 0;
-	   while (it.hasNext() && i < Config.Instance().LevelsCount())
-	   {
-			 Entry<Double, Integer> kvp = it.next();
-	  		 ret[i++] = new Frequency(kvp.getValue(), new BigDecimal(kvp.getKey()));
-	   }
-	   
-	   if (i  < Config.Instance().LevelsCount() )
-	   {
-		   return Arrays.copyOf(ret, i);
-	   }
-		return ret;
-*/	   
 	}
 
 

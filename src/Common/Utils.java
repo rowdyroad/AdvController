@@ -6,6 +6,7 @@ import javax.sound.sampled.AudioInputStream;
 
 public class Utils 
 {
+		static public Integer DeltaFrequency = 8;
 		static public void ShowStreamInfo(AudioInputStream ret)
 		{
 			System.out.println("Channels:" + ret.getFormat().getChannels());
@@ -61,5 +62,9 @@ public class Utils
 			return path;
 		}
 		
-		
+		static public Integer GreaterBinary(Integer a)
+		{
+			int pow = (int)Math.ceil(Math.log(a)/ Math.log(2));
+			return (int)Math.pow(2,pow);
+		}
 }

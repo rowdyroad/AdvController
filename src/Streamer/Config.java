@@ -19,11 +19,13 @@ public class Config {
 	private double fingerprint_equivalency_ = 0.9 ;
 	private String promos_path_;
 	private String source_;
+	private int sample_rate_ = 44100;
 	private Config()
 	{
 		try
 		{
 			external_program_ = Common.Config.Instance().GetProperty("external_program", "");
+			sample_rate_ = Integer.parseInt(Common.Config.Instance().GetProperty("sample_rate", Integer.toString(sample_rate_)));
 			source_ = Common.Config.Instance().GetProperty("source","soundcard");
 			promos_path_ = Common.Config.Instance().GetProperty("storage", ".");
 			promos_path_ = (promos_path_.isEmpty()) ? "./" : Utils.CompletePath(promos_path_);
@@ -35,6 +37,11 @@ public class Config {
 		}
 	}
 	
+	
+	public int SampleRate()
+	{
+		return sample_rate_;
+	}
 	public String Source()
 	{
 		return source_;
