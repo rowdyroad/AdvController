@@ -27,8 +27,8 @@ public class Settings {
 		window_size_ = Utils.GreaterBinary(deltaFrequency * sample_rate_ / (channels_ * Common.Config.Instance().FrequencyStep()));
 		
 		fft_window_ = Utils.GreaterBinary(sample_rate_ / (channels_ * Common.Config.Instance().FrequencyStep()));
-		process_start_ = (int)Math.round((double)Common.Config.Instance().MinFrequency() * fft_window_ / sample_rate_);
-		process_stop_ = (int)Math.round((double)Common.Config.Instance().MaxFrequency() * fft_window_ / sample_rate_);
+		process_start_ = (int)Math.round((double)Common.Config.Instance().MinFrequency() * window_size_ / sample_rate_);
+		process_stop_ = (int)Math.round((double)Common.Config.Instance().MaxFrequency() * window_size_ / sample_rate_);
 		overlapped_length_ = window_size_ / Common.Config.Instance().OverlappedCoef();
 		Utils.Dbg(this);
 	}
@@ -77,7 +77,7 @@ public class Settings {
 	@Override
 	public String toString()
 	{
-		return String.format("SampleRate:%d\nChannels:%d\nSampleSize:%d\nIsBigEndian:%b\nWindowSize:%d\nProcessStart:%d\nProcessStop:%d\nOverlappedCoef:%d\n",
+		return String.format("SampleRate:%d\nChannels:%d\nSampleSize:%d\nIsBigEndian:%b\nWindowSize:%d\nProcessStart:%d\nProcessStop:%d\nOverlappedLength:%d\n",
 									   sample_rate_ ,channels_,sample_size_,is_big_endian_ ,window_size_,process_start_ ,process_stop_ ,overlapped_length_);
 		
 	}

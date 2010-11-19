@@ -103,15 +103,14 @@ public class AltFFT {
 	}
 		
 	
-		public static double[] window(double[] data)
+		public static void window(double[] data)
 		{
-			double[] x = new double[data.length];
+		
 			for (int i =0; i < data.length; ++i)
 			{
 				double w = 2*Math.PI*i / data.length;
-				x[i] =  data[i] * (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
+				data[i] =  data[i] * (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
 			}
-			return x;
 		}
 		
 		public static void transform(double[] data)

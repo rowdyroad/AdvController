@@ -66,7 +66,10 @@ public class Source {
 	private int frameSize_;
 	private int readChunkSize_;
 	private byte[] cache_;;
-	private int cache_len_ = 0;	
+	private int cache_len_ = 0;
+	private int overlapped_length_ = 0;
+	private byte[] overlapped_cache_;
+	private int overlapped_cache_len_ = 0;
 	private Settings settings_;
 	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
 	
@@ -75,8 +78,13 @@ public class Source {
 		stream_ = stream;
 		frameSize_ = settings.Channels() * settings.SampleSize();
 		readChunkSize_ = frameSize_ * settings.WindowSize();
+		overlapped_length_ = frameSize_ * settings.OverlappedLength();
 		cache_ = new byte[readChunkSize_];
+		overlapped_cache_  = new byte[readChunkSize_];
 		settings_ = settings;
+		
+		
+		Utils.Dbg("frameSize:%d", frameSize_);
 	}
 	
 	
@@ -97,10 +105,36 @@ public class Source {
 		 return (double)buf.getShort() / Short.MAX_VALUE;
 	} 
 	
+	
 	private void process(byte[] buf, int len)
 	{
-		double[] left = new double[len / frameSize_];
-		double[] right = new double[len / frameSize_];
+		if (buf.length != len) return;
+		int buf_pos = 0;
+		//Utils.Dbg("a");
+		while (buf_pos < len)
+		{			
+			int add_len = len - overlapped_cache_len_;
+			
+			//Utils.Dbg("buf_pos:% d a len:%d",buf_pos,  overlapped_cache_len_);
+			System.arraycopy(buf, buf_pos, overlapped_cache_, overlapped_cache_len_, add_len);
+			overlapped_cache_len_+=add_len;
+			buf_pos+=add_len;
+			
+		//	Utils.Dbg("b len:%d", overlapped_cache_len_);
+			convert(overlapped_cache_, overlapped_cache_len_);
+			System.arraycopy(overlapped_cache_, overlapped_length_, overlapped_cache_, 0, overlapped_cache_len_ - overlapped_length_);
+			overlapped_cache_len_-=overlapped_length_;
+			
+		//	Utils.Dbg("c len:%d", overlapped_cache_len_);
+		}
+		
+		//Utils.Dbg("z");
+	}
+	
+	private void convert(byte[] buf, int len)
+	{
+		double[] left = new double[buf.length / frameSize_];
+		double[] right = new double[buf.length / frameSize_];
 
 		for (int i = 0, j = 0; i < len; i+=frameSize_, ++j)
 		{
@@ -113,6 +147,11 @@ public class Source {
 			{
 				left[j] = right[j] = convertFromAr(buf, i, i+1);
 			}
+		}
+		
+		for (int i =len; i< buf.length / frameSize_; ++i)
+		{
+			left[i] = right[i] = 0;
 		}
 		
 		

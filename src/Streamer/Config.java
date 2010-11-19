@@ -16,7 +16,7 @@ public class Config {
 	}
 	
 	private String external_program_ = new String();;
-	private double fingerprint_equivalency_ = 0.9 ;
+	private double fingerprint_equivalency_ = 0.6 ;
 	private String promos_path_;
 	private String source_;
 	private int sample_rate_ = 44100;
@@ -29,7 +29,7 @@ public class Config {
 			source_ = Common.Config.Instance().GetProperty("source","soundcard");
 			promos_path_ = Common.Config.Instance().GetProperty("storage", ".");
 			promos_path_ = (promos_path_.isEmpty()) ? "./" : Utils.CompletePath(promos_path_);
-			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("equality", "1"));
+			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("equivalency", Double.toString(fingerprint_equivalency_)));
 		} 
 		catch (Exception e)
 		{

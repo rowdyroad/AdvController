@@ -17,7 +17,7 @@ public class Main {
 			r[i] = Math.sin(i);
 			
 		}
-		long t = System.currentTimeMillis();
+		/*long t = System.currentTimeMillis();
 		double[] aret = AltFFT.transform(r);
 		Utils.Dbg("altFFT:%d", System.currentTimeMillis() - t );
 			
@@ -31,7 +31,9 @@ public class Main {
 			Utils.Dbg("re[%d]=%f\t\t\t%f\t",i,ret[i],aret[i]);
 		}
 		
-		return ret;
+		return ret;*/
+		
+		return null;
 	}
 	
 	static void UT_FFTMAXLEVELS(double[] data)

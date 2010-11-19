@@ -42,13 +42,6 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			this.frequency = frequency;
 			this.begin =  begin;
 		}
-		
-		@Override
-		public boolean equals(Object obj)
-		{
-			Period p = (Period)obj;
-			return  p.begin == begin && p.frequency.frequency ==  frequency.frequency;
-		}
 	}
 	
 	
@@ -95,50 +88,46 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	private long time_;
 	private LinkedList<LinkedList<Period>> periods_  =  new LinkedList<LinkedList<Period>>();
 	private int window_size_;
+	private int levels_count_;
 	
 	public long Time()
 	{
 		return time_;
 	}
-	public FingerPrint(String id, long time, int windowSize)
+	public FingerPrint(String id, long time, int windowSize, int levelsCount)
 	{
 		id_ = id; 
 		time_ = time;
 		window_size_ = windowSize;
+		levels_count_ = levelsCount;
 	}
 
 	public String Id() { return id_; }
-
 	
+	public int LevelsCount()
+	{
+		return levels_count_;
+	}
+
 	public List<Period> Exists(int index, Frequency[] frequency)
 	{
 		LinkedList<Period> list = periods_.get(index);
 		if (list == null) 
 		{
-			if (frequency == null)
-			{
-				return new LinkedList<Period>();
-			}
 			return null;
 		}
 
-		Vector<Frequency> vector = new Vector<Frequency>();
-		for (int i = 0; i < frequency.length; ++i)
-		{
-			vector.add(frequency[i]);
-		}
-		
 		List<Period> ret = new LinkedList<Period>();
 		for (Period p : list)
 		{
-			if (ret.contains(p)) continue;
-			for (int i = 0; i < vector.size(); ++i)
+			for (int i =0;i < frequency.length; ++i)
 			{
-				if (vector.get(i).frequency.compareTo(p.frequency.frequency) == 0)
+				if (Math.abs(frequency[i].frequency - p.frequency.frequency) <= 10)
 				{
-					ret.add(p);
-					vector.remove(i);
-					break;
+					if (!ret.contains(p))
+					{
+						ret.add(p);
+					}
 				}
 			}
 		}

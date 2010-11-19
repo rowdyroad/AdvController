@@ -40,7 +40,7 @@ public class Capturer implements Frequencier.Catcher
 		
 		source_ = new Source(stream, settings_);
 		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_));																					
-		fp_ = new FingerPrint(id,stream.getFrameLength(), settings_.WindowSize());		
+		fp_ = new FingerPrint(id,stream.getFrameLength(), settings_.WindowSize(), Common.Config.Instance().LevelsCount());		
 	}
 
 	public FingerPrint Process()
@@ -72,7 +72,7 @@ public class Capturer implements Frequencier.Catcher
 				{
 					if (p1.frequency.frequency.compareTo(p.frequency.frequency) == 0)
 					{
-						p1.frequency.level = new BigDecimal(Math.max(p.frequency.level.doubleValue(), p1.frequency.level.doubleValue()));
+						p1.frequency.level = Math.max(p.frequency.level, p1.frequency.level);
 						found = true;
 						break;
 					}				

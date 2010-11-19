@@ -14,7 +14,6 @@ import java.util.Map.Entry;
 
 import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 
-import Common.Config;
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Utils;
@@ -23,7 +22,7 @@ import Common.Frequencier.Catcher;
 import Common.Frequency;
 
 public class Comparer implements Catcher{
-	
+
 	public interface Resulter
 	{
 		public boolean OnFound(String id, long timestamp, double equivalency);
@@ -35,10 +34,10 @@ public class Comparer implements Catcher{
 		int position_ = 0;
 		long time_ = 0;
 		long equivalency = 0;
-		
+
 		long diff = 0;
 		int id;
-		
+
 		public FingerPrintWrapper(FingerPrint fingerPrint, int position)
 		{
 			fingerPrint_ = fingerPrint;
@@ -57,7 +56,7 @@ public class Comparer implements Catcher{
 		int pos;
 		int time;
 		FingerPrint fp;
-		
+
 		public FingerPrintWaiter(FingerPrint fp)
 		{
 			this.fp = fp;
@@ -65,13 +64,14 @@ public class Comparer implements Catcher{
 			time = 0;
 		}
 	}
-	
+
 	private List<FingerPrint> fingerPrints_ = null;
 	private Resulter resulter_ = null;
 	private int window_size_;
 	private int overlapped_length_;
 	private Settings settings_;
-	
+
+
 	public Comparer(List<FingerPrint> fingerPrints, Resulter resulter, Settings settings)
 	{
 		fingerPrints_ = fingerPrints;
@@ -79,13 +79,13 @@ public class Comparer implements Catcher{
 		window_size_ = settings.WindowSize();
 		overlapped_length_ = settings.OverlappedLength();
 		settings_ = settings;
-		
+
 		for (FingerPrint fp :fingerPrints_)
 		{
 			sign.put(fp, new Signature());
 		}
 	}
-	
+
 	public static class FW
 	{
 		static private int gid = 0;
@@ -98,7 +98,7 @@ public class Comparer implements Catcher{
 		double level;
 		int[] maxes;
 		List<Period> periods = new LinkedList<Period>();
-		
+
 		public FW(FingerPrint fp)
 		{			
 			this.id = ++gid;
@@ -109,57 +109,188 @@ public class Comparer implements Catcher{
 			return ((FW)o).id == id;
 		}
 	}
-	
+
 	int time_ = 0;
-	
+
 	List<Period> periods = new LinkedList<Period>();
 	Map<FingerPrint, Integer> counts = new TreeMap<FingerPrint, Integer>();
 	Map<FingerPrint, LinkedList<FW>> waiters = new TreeMap<FingerPrint,LinkedList<FW>>();
 	LinkedList<Period> cache_ = new LinkedList<Period>();
 	LinkedList<Period> periods_ = new  LinkedList<Period>();
-	
+
 	class Signature
 	{
 		Integer max = 0;
 		Integer offset = 0;
 
 	}
-	
+
 	Map<FingerPrint, Signature> sign = new TreeMap<FingerPrint, Signature>();
-	
-	
+
+
 	long timestamp =  System.currentTimeMillis();
-	
-	int k = 0;
-	int t = 0;
+
+	class FPWrp
+	{
+		Integer time = 0;
+		Integer index = 0;		
+		Integer last = 0;
+		Integer begin = 0;
+		Integer total = 0;
+		Integer max = 0;
+		Integer next = 0;
+		boolean begun  = false;
+		FingerPrint fp;
+
+		public FPWrp(FingerPrint fp, int time, int total)
+		{
+			this.fp = fp;
+			this.time = time;
+			this.last = time;
+			Next(time,total);
+		}
+
+		public void Next(int time, int max)
+		{
+			this.total +=max;
+			this.next = time + window_size_;
+			this.max  = 0;
+			++index;
+		}
+
+		public void NullNext()
+		{
+			++index;
+			max = 0;
+			next = 0;
+		}
+	}
+
+	private List<FPWrp> wrps = new LinkedList<FPWrp>();
+
+
+
+	int nmax = 0;
+	int ntime = 0;
+	FingerPrint nFingerPrint = null;
+
+
 	@Override
 	public boolean OnReceived(Frequency[] frequency, long timeoffset) 
 	{		
-		
-		if (frequency != null && frequency.length > 0 && frequency[0].level.compareTo(new BigDecimal(1)) == 1)
-		{	
-	
-			for (FingerPrint fp: fingerPrints_)
+		if (frequency != null && frequency.length > 0 && frequency[0].level > 1)
+		{
+			if (time_ % window_size_ != 0)
 			{
-				Signature signature = sign.get(fp);
-				List<Period> pl = fp.Exists(k, frequency);
-			
-				
-				if (pl != null)
+				for (FingerPrint fp: fingerPrints_)
 				{
-					Utils.Dbg("C:%d",pl.size());
+					List<Period> p = fp.Exists(0, frequency);
+					if (p == null) continue;
+					if (p.size() > 8 && p.size() > nmax)
+					{
+						nmax = p.size();
+						ntime = time_;
+						nFingerPrint = fp;
+					}
+				}
+			}
+			else
+			{
+				if (nFingerPrint!=null)
+				{
+				//	Utils.Dbg("%s | add to waiter with:%d at %d",nFingerPrint.Id(), nmax, ntime);
+					wrps.add(new FPWrp(nFingerPrint, ntime, nmax));
+					nmax = 0;
+					ntime = 0;
 				}
 				
-				if (pl ==null || pl.size()>=9) 
-				{
-					k++;
-				}
+				nFingerPrint = null;
+				
+				Collections.sort(wrps, new Comparator<FPWrp>() {
+					@Override
+					public int compare(FPWrp arg0, FPWrp arg1) {
+						return -arg0.total.compareTo(arg1.total);
+					}});
+			}
 
+			Iterator<FPWrp> wit = wrps.iterator();
+			
+			while (wit.hasNext())
+			{
+				FPWrp wrp = wit.next();
+				List<Period> p = null;
+				try
+				{
+					p = wrp.fp.Exists(wrp.index, frequency);
+				}
+				catch (IndexOutOfBoundsException  e)
+				{
+					Utils.Dbg("%s | remove from over for index",wrp.fp.Id());
+					wit.remove();
+					continue;
+				}
+				
+				if (p != null)
+				{
+					if (wrp.next <= time_)
+					{
+						if (time_ % window_size_ != 0)
+						{
+							if (p.size() > 8 && p.size() > wrp.max)
+							{
+							//	Utils.Dbg("%s | found max:%d",wrp.fp.Id(), p.size());
+								wrp.max = p.size();
+								wrp.last = time_;
+							}
+						}
+						else
+						{
+							Utils.Dbg("%s | max:%d time:%d total:%d/%d  index:%d\n", wrp.fp.Id(), wrp.max, wrp.last, wrp.total,wrp.fp.Count(), wrp.index);
+							wrp.Next(time_,wrp.max);
+						}
+					}
+				}
+				else
+				{
+					wrp.NullNext();
+				}
+			}
+			
+			Collections.sort(wrps, new Comparator<FPWrp>() {
+				@Override
+				public int compare(FPWrp arg0, FPWrp arg1) {
+					return -arg0.total.compareTo(arg1.total);
+				}});			
+
+			if (! wrps.isEmpty())
+			{
+
+				FPWrp wrp = wrps.get(0);
+				
+				if ((double)wrp.total / wrp.fp.Count() >= Config.Instance().FingerPrintEquivalency())
+				{
+					resulter_.OnFound(wrp.fp.Id(), System.currentTimeMillis() / 1000, (double)wrp.total / wrp.fp.Count());					
+					wrps.clear();
+				}
 			}
 		}
 		
-		time_+=timeoffset;
 		
+		Iterator<FPWrp> it = wrps.iterator();
+		
+		while (it.hasNext())
+		{
+			FPWrp wrp = it.next();
+		
+			if (time_ > wrp.time + wrp.fp.Time())
+			{
+				Utils.Dbg("%s | remove from over for time %d",wrp.fp.Id(), wrp.total);
+				it.remove();
+			}
+		}
+		time_+=timeoffset;
+
+
 		/*Vector<FW> ignore = new Vector<FW>();		
 		if (frequency != null && frequency.length > 0 && frequency[0].level.compareTo(new BigDecimal(1)) == 1)
 		{					
@@ -292,10 +423,10 @@ public class Comparer implements Catcher{
 	@Override
 	public void OnError() {
 		// TODO Auto-generated method stub
-		
+
 	} 
-	
- 
-	
-	
+
+
+
+
 }

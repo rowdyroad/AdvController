@@ -24,9 +24,9 @@ public class ResultSubmiter implements Resulter {
 		
 		try {
 			Runtime.getRuntime().exec(path);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		return true;
 	}
