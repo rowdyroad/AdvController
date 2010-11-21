@@ -109,7 +109,12 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		return levels_count_;
 	}
 
-	public List<Period> Exists(int index, Frequency[] frequency)
+	public int LevelsCount(int index)
+	{
+		return periods_.get(index).size();
+	}
+	
+	public List<Period> Exists(int index, List<Frequency> frequency)
 	{
 		LinkedList<Period> list = periods_.get(index);
 		if (list == null) 
@@ -118,17 +123,12 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		}
 
 		List<Period> ret = new LinkedList<Period>();
+		
 		for (Period p : list)
 		{
-			for (int i =0;i < frequency.length; ++i)
+			if (frequency.contains(p.frequency))
 			{
-				if (Math.abs(frequency[i].frequency - p.frequency.frequency) <= 10)
-				{
-					if (!ret.contains(p))
-					{
-						ret.add(p);
-					}
-				}
+				ret.add(p);
 			}
 		}
 		return ret; 
@@ -140,11 +140,12 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	
 	public boolean Add(LinkedList<Period> periods)
 	{
-		if (periods.isEmpty() || periods.getFirst().frequency.level.doubleValue() < minLevel) 
+		if (periods.isEmpty()) 
 		{
 			periods_.add(null);	
 			return false;
 		}
+		
 		totalPeriods_+=periods.size();
 		maxLevel = Math.max(maxLevel, periods.getFirst().frequency.level.doubleValue());
 		minLevel = Math.max(minLevel, periods.getLast().frequency.level.doubleValue());
@@ -179,21 +180,11 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	 
 	public void ThinOut()
 	{ 
-		Iterator<LinkedList<Period>> it = periods_.iterator();
-		while (it.hasNext())
-		{
-			LinkedList<Period> list  = it.next();
-			if (list == null) continue;
-			if (list.getFirst().frequency.level.doubleValue() < minLevel)
-			{
-				periods_.set(periods_.indexOf(list),null);
-			}
-		}
-		while (periods_.getFirst() == null)
+		while (periods_.getFirst() == null || periods_.getFirst().getFirst().frequency.level <= minLevel)
 		{
 			periods_.removeFirst();
 		}
-		while (periods_.getLast() == null)
+		while (periods_.getLast() == null  || periods_.getLast().getFirst().frequency.level <= minLevel)
 		{
 			periods_.removeLast();
 		}

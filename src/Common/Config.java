@@ -7,7 +7,7 @@ public class Config {
 	private int overlapped_coef_ = 4;
 	private int levels_count_= 20;
 	private int min_frequency_ = 20;
-	private int max_frequency_ = 20000;
+	private int max_frequency_ = 10000;
 	private double noise_gate_ = 0.0005;
 	private static Config instance_ = null;
 	public static String Filename = "soas.ini";

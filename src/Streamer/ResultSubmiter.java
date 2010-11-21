@@ -3,7 +3,7 @@ package Streamer;
 import java.io.IOException;
 
 import Common.Utils;
-import Streamer.Comparer.Resulter;
+import Streamer.Resulter;
 
 public class ResultSubmiter implements Resulter {
 

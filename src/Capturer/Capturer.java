@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -18,6 +19,7 @@ import javax.sound.sampled.AudioSystem;
 import Common.Config;
 import Common.FingerPrint;
 import Common.FingerPrint.Period;
+import Common.Frequency;
 import Common.Settings;
 import Common.Source;
 import Common.Frequencier;
@@ -41,13 +43,12 @@ public class Capturer implements Frequencier.Catcher
 		source_ = new Source(stream, settings_);
 		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_));																					
 		fp_ = new FingerPrint(id,stream.getFrameLength(), settings_.WindowSize(), Common.Config.Instance().LevelsCount());		
+		Utils.Dbg("FrameLength:%d",stream.getFrameLength());
 	}
 
 	public FingerPrint Process()
 	{
-		while (source_.Read()) {
-			Utils.Dbg("Process: %d%% completed", time_ * 100 / fp_.Time());
-		};
+		source_.Process();
 		Utils.Dbg("Process is over");
 		fp_.ThinOut();	
 		Utils.Dbg(fp_);
@@ -57,19 +58,17 @@ public class Capturer implements Frequencier.Catcher
 	private LinkedList<Period> periods_ = new  LinkedList<Period>();
 	
 	@Override
-	public boolean OnReceived(Common.Frequency[] frequency, long timeoffset) 
+	public boolean OnReceived(List<Frequency> frequency, long timeoffset) 
 	{
-		
-		Utils.Dbg("timeoffset:%d", time_);
 		if (frequency != null)
 		{
-			for (int i = 0; i < frequency.length; ++i)
+			for (Frequency f: frequency)
 			{
-			
-				Period p = new Period(frequency[i], time_);
+				Period p = new Period(f, time_);
 				boolean found = false;
 				for (Period p1: periods_)
 				{
+			
 					if (p1.frequency.frequency.compareTo(p.frequency.frequency) == 0)
 					{
 						p1.frequency.level = Math.max(p.frequency.level, p1.frequency.level);
@@ -97,7 +96,11 @@ public class Capturer implements Frequencier.Catcher
 			{
 				periods_.removeLast();
 			}
+			
+			
 			fp_.Add(periods_);
+			
+			
 			periods_ = new  LinkedList<Period>();
 		}
 		

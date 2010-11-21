@@ -2,6 +2,8 @@ package Streamer;
 
 
 import java.io.InputStream;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Vector;
 
 import javax.sound.sampled.AudioFormat;
@@ -17,9 +19,10 @@ import Common.Source;
 import Common.Source.Channel;
 import Common.Utils;
 
+
 public class Streamer
 {
-	private Vector<FingerPrint> fingerPrints_ = new Vector<FingerPrint>();	
+	private List<FingerPrint> fingerPrints_ = new LinkedList<FingerPrint>();	
 	private Source source_;
 	private Settings settings_;
 	
@@ -69,13 +72,14 @@ public class Streamer
 	
 	public void Process()
 	{
-		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter(), settings_), settings_));
-
-		//source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL,new Frequencier(new Comparer(fingerPrints_, new ResultSubmiter())));
-		Utils.Dbg("listening...");
-		while (source_.Read())
+		Summator sm = new Summator(settings_);
+		Resulter resulter = new ResultSubmiter();
+		for (FingerPrint fp: fingerPrints_)
 		{
-			
+			sm.AddComparer(new Comparer(fp, settings_,resulter));
 		}
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_));
+		Utils.Dbg("listening...");		
+		source_.Process();
 	}
 }

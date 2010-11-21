@@ -18,5 +18,12 @@ public class Frequency implements Serializable
 		this.level = level;
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		Frequency f = (Frequency)obj;
+		return  (f.frequency - frequency == 0);
+	}
+	
 	
 }

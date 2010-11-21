@@ -4,16 +4,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
 
-public class Source {
+public class Source implements Runnable {
 
-	
+
 	public static class SourceException extends Exception
 	{
 		private static final long serialVersionUID = 5707762550983986760L;
+		
 		
 		public  enum ErrorType
 		{
@@ -21,12 +25,12 @@ public class Source {
 			CHANNELS,
 			SAMPLE_SIZE
 		}
-		
+
 		private static String[] errors = {"Incorrect sample rate", "Incorrect number of channels","Incorrect sample size"};
-		
+
 		private String error_;
 		private ErrorType errno_;
-	
+
 		public SourceException(ErrorType error)
 		{
 			errno_ = error;	
@@ -37,7 +41,7 @@ public class Source {
 		{
 			return error_;
 		}
-		
+
 		public String Error()
 		{
 			return error_;
@@ -47,48 +51,62 @@ public class Source {
 			return errno_;
 		}
 	}
-	
-	
+
+
 	private InputStream stream_;
-	
+
 	public interface AudioReceiver
 	{
 		public void OnSamplesReceived(double[] db);
 	}
-	
+
 
 	public enum Channel
 	{
 		LEFT_CHANNEL,
 		RIGHT_CHANNEL
 	}
-	
+
 	private int frameSize_;
 	private int readChunkSize_;
-	private byte[] cache_;;
+	private byte[] cache_;
 	private int cache_len_ = 0;
 	private int overlapped_length_ = 0;
 	private byte[] overlapped_cache_;
 	private int overlapped_cache_len_ = 0;
 	private Settings settings_;
 	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
-	
+
+	private class Buffer
+	{
+		byte[] buffer;
+		int length;
+		public Buffer(byte[] buffer, int length)
+		{
+			this.buffer = buffer;
+			this.length = length;
+		}
+	}
+
+	private List<Buffer> buffer_ = Collections.synchronizedList(new LinkedList<Buffer>());
+	private Thread thread_;
+
 	public Source(InputStream stream, Settings settings) throws Exception
 	{
 		stream_ = stream;
 		frameSize_ = settings.Channels() * settings.SampleSize();
-		readChunkSize_ = frameSize_ * settings.WindowSize();
-		overlapped_length_ = frameSize_ * settings.OverlappedLength();
+		readChunkSize_ =  settings.WindowSize() * frameSize_;
+		overlapped_length_ = settings.OverlappedLength() * frameSize_;
 		cache_ = new byte[readChunkSize_];
 		overlapped_cache_  = new byte[readChunkSize_];
 		settings_ = settings;
-		
-		
-		Utils.Dbg("frameSize:%d", frameSize_);
+		overlapped_cache_len_ = readChunkSize_ - overlapped_length_;
+		thread_ = new Thread(this);
+		thread_.start();
 	}
-	
-	
-	
+
+
+
 	public void RegisterAudioReceiver(Channel channel, AudioReceiver receiver)
 	{
 		if (receivers_.get(channel) == null)
@@ -100,64 +118,69 @@ public class Source {
 
 	private double convertFromAr(byte[] b, int start, int end)
 	{
-		 ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
-		 buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
-		 return (double)buf.getShort() / Short.MAX_VALUE;
+		ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
+		buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
+		return (double)buf.getShort() / Short.MAX_VALUE;
 	} 
-	
-	
+
+
+	int totals = 0;
+	int counts = 0;
 	private void process(byte[] buf, int len)
 	{
-		if (buf.length != len) return;
+		if (buf.length != len)
+		{
+			return;
+		}
+		totals+=buf.length;
+		//Utils.Dbg("%d Totals:%d", ++counts, totals / frameSize_);
 		int buf_pos = 0;
-		//Utils.Dbg("a");
+
+		//Utils.Dbg("process:%d",buf.length);
 		while (buf_pos < len)
 		{			
 			int add_len = len - overlapped_cache_len_;
-			
-			//Utils.Dbg("buf_pos:% d a len:%d",buf_pos,  overlapped_cache_len_);
 			System.arraycopy(buf, buf_pos, overlapped_cache_, overlapped_cache_len_, add_len);
 			overlapped_cache_len_+=add_len;
 			buf_pos+=add_len;
-			
-		//	Utils.Dbg("b len:%d", overlapped_cache_len_);
 			convert(overlapped_cache_, overlapped_cache_len_);
 			System.arraycopy(overlapped_cache_, overlapped_length_, overlapped_cache_, 0, overlapped_cache_len_ - overlapped_length_);
 			overlapped_cache_len_-=overlapped_length_;
-			
-		//	Utils.Dbg("c len:%d", overlapped_cache_len_);
 		}
-		
-		//Utils.Dbg("z");
 	}
-	
+
 	private void convert(byte[] buf, int len)
 	{
-		double[] left = new double[buf.length / frameSize_];
-		double[] right = new double[buf.length / frameSize_];
-
-		for (int i = 0, j = 0; i < len; i+=frameSize_, ++j)
+		double[] left = new double[settings_.WindowSize()];
+		double[] right = new double[settings_.WindowSize()];
+		int j = 0;
+		double maxLeft =  Double.NEGATIVE_INFINITY;
+		double maxRight = Double.NEGATIVE_INFINITY;
+		
+		for (int i = 0; i < len - frameSize_; i+=frameSize_, j++)
 		{
 			if (settings_.Channels() == 2)
 			{
 				left[j] = convertFromAr(buf, i, i + 1);
-				right[j] = convertFromAr(buf, i + 2,i + 3);
+				right[j] = convertFromAr(buf, i + 2, i + 3);
 			}
 			else
 			{
-				left[j] = right[j] = convertFromAr(buf, i, i+1);
+				left[j] = right[j] = convertFromAr(buf, i, i + 1);
 			}
+			
+			maxLeft = Math.max(left[j],maxLeft);
+			maxRight = Math.max(right[j],maxRight);
 		}
 		
-		for (int i =len; i< buf.length / frameSize_; ++i)
+		for (int i =j; i< settings_.WindowSize() ; ++i)
 		{
 			left[i] = right[i] = 0;
 		}
-		
-		
+
 		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
 		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
-		
+
 		if (left_recv != null)
 		{
 			for (int i = 0; i < left_recv.size(); ++i)
@@ -174,71 +197,117 @@ public class Source {
 			}
 		}
 	}
-	
+
 	int readed = 0;
-	public Boolean Read()
+	public  void Process()
 	{
-		byte[] b = new byte[readChunkSize_];		
 		while (true)
 		{
-			try
-			{
-				int ret = stream_.read(b);
-				if (ret == -1 ) 
+				synchronized(this)
 				{
-					if (cache_len_> 0) 
+					if (thread_.isAlive())
 					{
-						process(cache_, cache_len_);
+						try {
+							wait();
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							return;
+						}
 					}
-					return false;
 				}
+				Utils.Dbg("zzz:%d",buffer_.size());
 				
-				readed+=ret;
-				if (ret < readChunkSize_ || cache_len_  > 0)
-				{
-					int len2cache = Math.min(readChunkSize_ - cache_len_, ret);
-					System.arraycopy(b, 0, cache_, cache_len_, len2cache);
-					cache_len_+= len2cache;
-					if (cache_len_ == readChunkSize_)
+				while (! buffer_.isEmpty())
+				{				
+					Buffer buf = buffer_.get(0);
+					buffer_.remove(0);
+					if (buf == null)
 					{
-						process(cache_,cache_len_);
-						if (len2cache < ret)
+						if (cache_len_> 0) 
 						{
-							cache_len_ = ret - len2cache;
-							System.arraycopy(b,len2cache, cache_,0, cache_len_);
+							process(cache_, cache_len_);
 						}
-						else
+						return;	
+					}
+			
+					int ret = buf.length;
+					byte[] b = buf.buffer;
+					
+					readed+=ret;
+					if (ret < readChunkSize_ || cache_len_  > 0)
+					{
+						int len2cache = Math.min(readChunkSize_ - cache_len_, ret);
+						System.arraycopy(b, 0, cache_, cache_len_, len2cache);
+						cache_len_+= len2cache;
+						if (cache_len_ == readChunkSize_)
 						{
-							break;
+							process(cache_,cache_len_);
+							if (len2cache < ret)
+							{
+								cache_len_ = ret - len2cache;
+								System.arraycopy(b,len2cache, cache_,0, cache_len_);
+							}
+							else
+							{
+								continue;
+							}
 						}
 					}
+					else
+					{
+						process(b,ret);
+						continue;
+					}
 				}
-				else
-				{
-					process(b,ret);
-					return true;
-				}
-			}
-			catch (IOException e)
-			{
-				if (cache_len_ > 0)
-				{
-					process(cache_,cache_len_);
-				}
-				e.printStackTrace();
-				return false;
-			}
 		}
-		
-		return true;
-		
-		
-	
 	}
-	
+
+
 	public InputStream Stream()
 	{
 		return stream_;
 	}
-	
+
+
+
+	@Override
+	public  void  run() {
+		// TODO Auto-generated method stub
+		while (true)
+		{
+			byte[] buf = new byte[readChunkSize_];
+			int ret;
+			try {
+				ret = stream_.read(buf);
+				if (ret == -1)
+				{
+					buffer_.add(null);
+					synchronized(this)
+					{
+						notify();
+					}
+					return;
+				}
+				buffer_.add(new Buffer(buf, ret));
+				Utils.Dbg("read:%d",ret);
+				
+				synchronized(this)
+				{
+					notify();
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				buffer_.add(null);
+				synchronized(this)
+				{
+					notify();
+				}
+				e.printStackTrace();
+
+				return;
+			}
+		}
+	}
+
 }
