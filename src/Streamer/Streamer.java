@@ -76,7 +76,7 @@ public class Streamer
 		Resulter resulter = new ResultSubmiter();
 		for (FingerPrint fp: fingerPrints_)
 		{
-			sm.AddComparer(new Comparer(fp, settings_,resulter));
+			sm.AddFingerPrint(fp);
 		}
 		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_));
 		Utils.Dbg("listening...");		

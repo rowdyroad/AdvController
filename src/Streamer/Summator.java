@@ -35,6 +35,7 @@ public class Summator implements Catcher{
 	private LinkedList<Frequency[]> list = new LinkedList<Frequency[]>();
 	private LinkedList<LinkedList<Frequency>> captures = new LinkedList<LinkedList<Frequency>>();
 	private Writer wr;
+	private List<FingerPrint> fingerPrints_ = new LinkedList<FingerPrint>();
 	public Summator(Settings settings)
 	{
 		  try {
@@ -46,9 +47,10 @@ public class Summator implements Catcher{
 		settings_ = settings;
 	}
 	
-	public void AddComparer(Comparer comparer)
+	public void AddFingerPrint(FingerPrint fp)
 	{
-		comparers_.add(comparer);
+		fingerPrints_.add(fp);
+		//comparers_.add(comparer);
 	}
 
 	private LinkedList<Frequency> MergeFrequency (Frequency[] frequency)
@@ -104,27 +106,34 @@ public class Summator implements Catcher{
 	
 	
 	FingerPrint fp;
+	long next =0;
+	int i = 0;
 	
 	@Override
 	public boolean OnReceived(List<Frequency> frequency, long timeoffset) 
 	{
-		if (((LinkedList<Frequency>)frequency).getFirst().level < 1) return true;
-		Utils.Dbg(time_);
-		/*String data = new String();
+		if (i ==0 && !frequency.isEmpty() && ((LinkedList<Frequency>)frequency).getFirst().level < 1) return true;
+	
+		String data = new String();
 		data = String.format("%d\n",time_);
 		
 		for (Frequency f: frequency)
 		{
 			data += String.format("\t%d - %f\n", f.frequency, f.level);
 		}
+	//	Utils.Dbg(data);
 		
-		try {
-			//Utils.Dbg(data);
-			wr.write(data+"\n");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+		for (FingerPrint fp: fingerPrints_)
+		{
+			if (next <= time_)
+			{
+				List<Period> p = fp.Exists(i, frequency);
+				Utils.Dbg("%d - %d/%d",time_, i, p.size());
+				next = time_ + settings_.WindowSize();			
+				i++;
+			}
+		}
+		Utils.Dbg("");
 		
 		/*Utils.Dbg(frequency);
 		LinkedList<Frequency> fr = MergeFrequency(frequency);

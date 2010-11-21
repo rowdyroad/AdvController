@@ -126,30 +126,8 @@ public class Source implements Runnable {
 
 	int totals = 0;
 	int counts = 0;
+
 	private void process(byte[] buf, int len)
-	{
-		if (buf.length != len)
-		{
-			return;
-		}
-		totals+=buf.length;
-		//Utils.Dbg("%d Totals:%d", ++counts, totals / frameSize_);
-		int buf_pos = 0;
-
-		//Utils.Dbg("process:%d",buf.length);
-		while (buf_pos < len)
-		{			
-			int add_len = len - overlapped_cache_len_;
-			System.arraycopy(buf, buf_pos, overlapped_cache_, overlapped_cache_len_, add_len);
-			overlapped_cache_len_+=add_len;
-			buf_pos+=add_len;
-			convert(overlapped_cache_, overlapped_cache_len_);
-			System.arraycopy(overlapped_cache_, overlapped_length_, overlapped_cache_, 0, overlapped_cache_len_ - overlapped_length_);
-			overlapped_cache_len_-=overlapped_length_;
-		}
-	}
-
-	private void convert(byte[] buf, int len)
 	{
 		double[] left = new double[settings_.WindowSize()];
 		double[] right = new double[settings_.WindowSize()];
@@ -168,9 +146,6 @@ public class Source implements Runnable {
 			{
 				left[j] = right[j] = convertFromAr(buf, i, i + 1);
 			}
-			
-			maxLeft = Math.max(left[j],maxLeft);
-			maxRight = Math.max(right[j],maxRight);
 		}
 		
 		for (int i =j; i< settings_.WindowSize() ; ++i)
@@ -216,8 +191,6 @@ public class Source implements Runnable {
 						}
 					}
 				}
-				Utils.Dbg("zzz:%d",buffer_.size());
-				
 				while (! buffer_.isEmpty())
 				{				
 					Buffer buf = buffer_.get(0);
@@ -290,7 +263,6 @@ public class Source implements Runnable {
 					return;
 				}
 				buffer_.add(new Buffer(buf, ret));
-				Utils.Dbg("read:%d",ret);
 				
 				synchronized(this)
 				{
