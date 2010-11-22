@@ -18,7 +18,6 @@ import javax.sound.sampled.AudioSystem;
 
 import Common.Config;
 import Common.FingerPrint;
-import Common.FingerPrint.Period;
 import Common.Frequency;
 import Common.Settings;
 import Common.Source;
@@ -55,53 +54,21 @@ public class Capturer implements Frequencier.Catcher
 		return fp_;
 	}
 
-	private LinkedList<Period> periods_ = new  LinkedList<Period>();
+	private LinkedList<Frequency>  frequency_ = new  LinkedList<Frequency>();
 	
 	@Override
 	public boolean OnReceived(List<Frequency> frequency, long timeoffset) 
 	{
 		if (frequency != null)
 		{
-			for (Frequency f: frequency)
-			{
-				Period p = new Period(f, time_);
-				boolean found = false;
-				for (Period p1: periods_)
-				{
-			
-					if (p1.frequency.frequency.compareTo(p.frequency.frequency) == 0)
-					{
-						p1.frequency.level = Math.max(p.frequency.level, p1.frequency.level);
-						found = true;
-						break;
-					}				
-				}			
-				if (! found)
-				{
-					periods_.add(p);
-				}
-			}
+			Frequency.Merge(frequency_, frequency);
 		}
 		
 		if (time_ % settings_.WindowSize() == 0)
 		{
-			
-			Collections.sort(periods_, new Comparator<Period>() {
-				@Override
-				public int compare(Period arg0, Period arg1) {
-					return - arg0.frequency.level.compareTo(arg1.frequency.level);
-				}});
-						
-			while (periods_.size() > Common.Config.Instance().LevelsCount())
-			{
-				periods_.removeLast();
-			}
-			
-			
-			fp_.Add(periods_);
-			
-			
-			periods_ = new  LinkedList<Period>();
+			Utils.DbgFrq(frequency_);
+			fp_.Add(frequency_);
+			 frequency_ = new  LinkedList<Frequency>();
 		}
 		
 		time_ += timeoffset;

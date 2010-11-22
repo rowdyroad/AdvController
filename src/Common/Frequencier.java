@@ -89,7 +89,7 @@ public class Frequencier implements Source.AudioReceiver {
 		{
 			System.arraycopy(cache, 0, data, 0, 3072);
 			System.arraycopy(db, total, data, 3072,  1024);
-			System.arraycopy(data, 1024, cache, 0, 3072);
+			System.arraycopy(data, 1024, cache, 0, 3072);		
 			fft_.Transform(data);
 			convertToFrequency(data, 0, freqs);
 			total+=1024;
@@ -99,7 +99,7 @@ public class Frequencier implements Source.AudioReceiver {
 				{
 					return;	
 				}
-				freqs.clear();
+				freqs = new LinkedList<Frequency>();	
 			}
 		}
 		

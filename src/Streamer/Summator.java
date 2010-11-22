@@ -23,7 +23,6 @@ import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Utils;
-import Common.FingerPrint.Period;
 import Common.Frequencier.Catcher;
 import Common.Frequency;
 
@@ -107,32 +106,57 @@ public class Summator implements Catcher{
 	
 	FingerPrint fp;
 	long next =0;
-	int i = 0;
+	int total = 0;
+	int max = 0;
+	int index = 0;
+	boolean started = false;
+	LinkedList<LinkedList<Frequency>> fr = new LinkedList<LinkedList<Frequency>>();
 	
 	@Override
 	public boolean OnReceived(List<Frequency> frequency, long timeoffset) 
 	{
-		if (i ==0 && !frequency.isEmpty() && ((LinkedList<Frequency>)frequency).getFirst().level < 1) return true;
-	
-		String data = new String();
-		data = String.format("%d\n",time_);
+		if (!started &&  !frequency.isEmpty() && ((LinkedList<Frequency>)frequency).getFirst().level < 1) return true;
+		started = true;
+
+		fr.add((LinkedList<Frequency>) frequency);
 		
-		for (Frequency f: frequency)
+		if (fr.size() > 16)
 		{
-			data += String.format("\t%d - %f\n", f.frequency, f.level);
+			fr.removeFirst();
 		}
-	//	Utils.Dbg(data);
+		
+		if (fr.size() < 16) 
+		{
+			time_+=timeoffset;
+			return true;
+		}
+			
+		List<Frequency> sum = new LinkedList<Frequency>();
+		
+		for (LinkedList<Frequency> freq: fr)
+		{
+			Frequency.Merge(sum,freq);
+		}
+		
+		if (time_ % settings_.WindowSize() == 0 && max > 0)
+		{
+			total+=max;
+			Utils.Dbg("total:%d",total);
+			max = 0;
+		}
+			
+	//	Utils.DbgFrq(frequency);
 		
 		for (FingerPrint fp: fingerPrints_)
 		{
-			if (next <= time_)
+			for (int i =0; i < fp.Frames(); ++i)
 			{
-				List<Period> p = fp.Exists(i, frequency);
-				Utils.Dbg("%d - %d/%d",time_, i, p.size());
-				next = time_ + settings_.WindowSize();			
-				i++;
+				List<Frequency> p = fp.Exists(i, sum);
+				max = Math.max(p.size(), max);
+				Utils.Dbg("%d   | index:%d/%d   size:%d",time_, i, time_/settings_.WindowSize(), p.size());
 			}
 		}
+
 		Utils.Dbg("");
 		
 		/*Utils.Dbg(frequency);

@@ -23,6 +23,8 @@ public final class FFT
 		if(re.length != windowSize)
 			throw new IllegalArgumentException("data array smaller than fft window size");
 
+
+		
 		for (int i =0; i < re.length; ++i)
 		{
 			re[i] =  re[i] * windowFunction[i];

@@ -126,9 +126,11 @@ public class Source implements Runnable {
 
 	int totals = 0;
 	int counts = 0;
+	byte[] x = new byte[128];
 
 	private void process(byte[] buf, int len)
 	{
+		
 		double[] left = new double[settings_.WindowSize()];
 		double[] right = new double[settings_.WindowSize()];
 		int j = 0;

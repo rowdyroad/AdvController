@@ -1,5 +1,6 @@
 package Common;
 import java.util.Date;
+import java.util.List;
 
 import javax.sound.sampled.AudioInputStream;
 
@@ -31,13 +32,12 @@ public class Utils
 			}
 			System.out.println();
 		}
-		static public void DbgFrq(Frequency[] frequency)
+		static public void DbgFrq(List<Frequency> frequency)
 		{
-			for (int i =0; i < frequency.length; ++i)
+			for (Frequency f: frequency)
 			{
-				Utils.Dbg("%d; %f;", frequency[i].frequency, frequency[i].level);
+				Utils.Dbg("%d; %f;", f.frequency, f.level);
 			}
-			Utils.Dbg("");
 		}
 		
 		@SuppressWarnings("deprecation")

@@ -26,68 +26,10 @@ import com.sun.org.apache.xpath.internal.Arg;
 public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 
 	private static final long serialVersionUID = 8559602924873961446L;
-
-	public Map<Integer, LinkedList<Period>> totals_  = new TreeMap<Integer, LinkedList<Period>>();;
-
-
-	static public class Period implements Serializable
-	{
-		private static final long serialVersionUID = -107614039539312946L;
-		public Frequency frequency;
-		public Long begin = new Long(0);
-		public Long end = new Long(0);
-		public Integer count = 1;		
-		public Period(Frequency frequency, Long begin)
-		{
-			this.frequency = frequency;
-			this.begin =  begin;
-		}
-	}
-	
-	
-	public class PeriodByFrequency implements Comparator<Period>,Serializable
-	{
-		private static final long serialVersionUID = 7687850436377389469L;
-
-		@Override
-		public int compare(Period arg0, Period arg1) {
-			return arg0.frequency.frequency.compareTo(arg1.frequency.frequency);
-		}		
-	}
-	
-	public class PeriodByLevel implements Comparator<Period>,Serializable
-	{
-		private static final long serialVersionUID = 7617850436377389469L;
-
-		@Override
-		public int compare(Period arg0, Period arg1) {
-			return -arg0.frequency.level.compareTo(arg1.frequency.level);
-		}		
-	}
-	
-	public class PeriodByTime implements Comparator<Period>,Serializable
-	{
-		private static final long serialVersionUID = 6981785399314304156L;
-
-		@Override
-		public int compare(Period o1, Period o2) {
-			return o1.begin.compareTo(o2.begin);
-		}
-	}
-	
-	public class PeriodByCount implements Comparator<Period>,Serializable
-	{
-		private static final long serialVersionUID = 8723042262877079969L;
-		@Override
-		public int compare(Period o1, Period o2) {
-			return -o1.count.compareTo(o2.count);
-		}
-	}
 	
 	private String id_;
 	private long time_;
-	private LinkedList<LinkedList<Period>> periods_  =  new LinkedList<LinkedList<Period>>();
-	private int window_size_;
+	private LinkedList<LinkedList<Frequency>> frequencies_  =  new LinkedList<LinkedList<Frequency>>();
 	private int levels_count_;
 	
 	public long Time()
@@ -98,7 +40,6 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	{
 		id_ = id; 
 		time_ = time;
-		window_size_ = windowSize;
 		levels_count_ = levelsCount;
 	}
 
@@ -111,62 +52,63 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 
 	public int LevelsCount(int index)
 	{
-		return periods_.get(index).size();
+		return frequencies_.get(index).size();
 	}
 	
-	public List<Period> Exists(int index, List<Frequency> frequency)
+	public List<Frequency> Exists(int index, List<Frequency> frequency)
 	{
-		LinkedList<Period> list = periods_.get(index);
+		LinkedList<Frequency> list = frequencies_.get(index);
 		if (list == null) 
 		{
 			return null;
 		}
 
-		List<Period> ret = new LinkedList<Period>();
+		List<Frequency> ret = new LinkedList<Frequency>();
 		
-		for (Period p : list)
+		for (Frequency f : list)
 		{
-			if (frequency.contains(p.frequency))
+			if (frequency.contains(f))
 			{
-				ret.add(p);
+				ret.add(f);
 			}
 		}
 		return ret; 
 	}
+	
+	public List<double[]> d = new LinkedList<double[]>();
 		
 	private int totalPeriods_ = 0;
 	private double maxLevel = 0;
 	private double minLevel = 0;
 	
-	public boolean Add(LinkedList<Period> periods)
+	public boolean Add(List<Frequency> frequency)
 	{
-		if (periods.isEmpty()) 
+		if (frequency.isEmpty()) 
 		{
-			periods_.add(null);	
+			frequencies_.add(null);	
 			return false;
 		}
-		
-		totalPeriods_+=periods.size();
-		maxLevel = Math.max(maxLevel, periods.getFirst().frequency.level.doubleValue());
-		minLevel = Math.max(minLevel, periods.getLast().frequency.level.doubleValue());
-		periods_.add(periods);
+		totalPeriods_+=frequency.size();
+		maxLevel = Math.max(maxLevel, ((LinkedList<Frequency>)frequency).getFirst().level);
+		minLevel = Math.max(minLevel, ((LinkedList<Frequency>)frequency).getLast().level);
+		frequencies_.add((LinkedList<Frequency>)frequency);
 		return true;
 	}
 
 	public int Count()
 	{
 		int i = 0;
-		for(LinkedList<Period> p : periods_)
+		for(LinkedList<Frequency> f : frequencies_)
 		{
-			if (p == null) continue;
-			i+=p.size();
+			if (f == null) continue;
+			i+=f.size();
 		}
 		return i;
 	}
 	
 	public int Frames()
 	{
-		return periods_.size();
+		return frequencies_.size();
 	}
 	
 	public void Serialize(String filename) throws IOException
@@ -180,13 +122,13 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	 
 	public void ThinOut()
 	{ 
-		while (periods_.getFirst() == null || periods_.getFirst().getFirst().frequency.level <= minLevel)
+		while (frequencies_.getFirst() == null || frequencies_.getFirst().getFirst().level <= minLevel)
 		{
-			periods_.removeFirst();
+			frequencies_.removeFirst();
 		}
-		while (periods_.getLast() == null  || periods_.getLast().getFirst().frequency.level <= minLevel)
+		while (frequencies_.getLast() == null  || frequencies_.getLast().getFirst().level <= minLevel)
 		{
-			periods_.removeLast();
+			frequencies_.removeLast();
 		}
 	 }
 	 
@@ -195,7 +137,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	{
 		String str = new String();
 		int i = 0;
-		for (LinkedList<Period> list: periods_)
+		for (LinkedList<Frequency> list: frequencies_)
 		{
 			str+=String.format("%d:\n", i++); 
 			if (list == null) 
@@ -203,9 +145,9 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 				str+="\tnull\n\n";
 				continue;
 			}
-			for (Period p: list)
+			for (Frequency f: list)
 			{
-				str+=String.format("\t%d  [%d - %d] %f\n", p.frequency.frequency, p.begin, p.end, p.frequency.level);
+				str+=String.format("\t%d  %f\n", f.frequency,f.level);
 			}
 			str+="\n";
 		}

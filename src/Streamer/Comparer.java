@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import Common.FingerPrint;
-import Common.FingerPrint.Period;
 import Common.Frequency;
 import Common.Settings;
 import Common.Utils;
@@ -62,7 +61,7 @@ public class Comparer {
 		
 		for (LinkedList<Frequency> fr: captures)
 		{
-			List<Period>p = fingerPrint_.Exists(0, fr);
+			List<Frequency>p = fingerPrint_.Exists(0, fr);
 			if (max < p.size())
 			{
 				max = p.size();
@@ -82,7 +81,7 @@ public class Comparer {
 			}
 			
 			LinkedList<Frequency> fr = captures.get(w.idx);
-			List<Period> p = fingerPrint_.Exists(w.index, fr);
+			List<Frequency> p = fingerPrint_.Exists(w.index, fr);
 			Utils.Dbg("%d: index:%d size:%d",w.id, w.index, p.size());
 			
 			w.next = time +  settings_.WindowSize();
