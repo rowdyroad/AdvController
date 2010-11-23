@@ -54,24 +54,20 @@ public class Capturer implements Frequencier.Catcher
 		return fp_;
 	}
 
-	private LinkedList<Frequency>  frequency_ = new  LinkedList<Frequency>();
-	
+	Vector<double[]> list = new Vector<double[]>();
 	@Override
-	public boolean OnReceived(List<Frequency> frequency, long timeoffset) 
+	public boolean OnReceived(double[] frequency, long timeoffset) 
 	{
-		if (frequency != null)
-		{
-			Frequency.Merge(frequency_, frequency);
-		}
-		
-		if (time_ % settings_.WindowSize() == 0)
-		{
-			Utils.DbgFrq(frequency_);
-			fp_.Add(frequency_);
-			 frequency_ = new  LinkedList<Frequency>();
-		}
-		
+		list.add(frequency);
+		Utils.Dbg("%d - %d", time_, timeoffset);
 		time_ += timeoffset;
+		
+		if (time_ % (settings_.WindowSize() / 2) == 0)
+		{
+			fp_.mfcc.add(list);
+			list = new Vector<double[]>();
+		}
+		
 		return true;
 	}
 
@@ -81,3 +77,4 @@ public class Capturer implements Frequencier.Catcher
 	}
 
 }
+

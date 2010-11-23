@@ -75,7 +75,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		return ret; 
 	}
 	
-	public List<double[]> d = new LinkedList<double[]>();
+	public Vector<Vector<double[]>> mfcc = new Vector<Vector<double[]>>();
 		
 	private int totalPeriods_ = 0;
 	private double maxLevel = 0;
@@ -122,35 +122,30 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	 
 	public void ThinOut()
 	{ 
-		while (frequencies_.getFirst() == null || frequencies_.getFirst().getFirst().level <= minLevel)
-		{
-			frequencies_.removeFirst();
-		}
-		while (frequencies_.getLast() == null  || frequencies_.getLast().getFirst().level <= minLevel)
-		{
-			frequencies_.removeLast();
-		}
+		mfcc.remove(0);
+		mfcc.remove(mfcc.size() -1);
 	 }
 	 
 	@Override
 	public String toString()
 	{
 		String str = new String();
-		int i = 0;
-		for (LinkedList<Frequency> list: frequencies_)
+		
+		for (int i = 0 ; i < mfcc.size(); ++i)
 		{
-			str+=String.format("%d:\n", i++); 
-			if (list == null) 
+			str+=String.format("%d:\n", i);
+			
+			for (int j = 0; j < mfcc.get(i).size(); ++ j)
 			{
-				str+="\tnull\n\n";
-				continue;
+				for (int k = 0; k <  mfcc.get(i).get(j).length; ++k)
+				{
+					str+=String.format("%f ",  mfcc.get(i).get(j)[k]);
+				}
+				str+="\n";
 			}
-			for (Frequency f: list)
-			{
-				str+=String.format("\t%d  %f\n", f.frequency,f.level);
-			}
-			str+="\n";
 		}
+		str+="\n";
+			
 		return str;
 	}
 	

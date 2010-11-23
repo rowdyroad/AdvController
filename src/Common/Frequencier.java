@@ -1,4 +1,5 @@
 package Common;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -8,7 +9,7 @@ public class Frequencier implements Source.AudioReceiver {
 
 	public interface Catcher
 	{
-		public boolean OnReceived(List<Frequency> frequency, long timeoffset);
+		public boolean OnReceived(double[]  mfcc, long timeoffset);
 		public void OnError();
 	}
 	
@@ -22,6 +23,7 @@ public class Frequencier implements Source.AudioReceiver {
 		catcher_ = catcher;
 		settings_  = settings;
 		fft_  = new FFT(4096);
+		mfcc_ = new util.MFCC(settings_.SampleRate(),8192, 20,false,50,5000,40);
 	}
 
 	private void convertToFrequency(double[] data, int begin,  List<Frequency> ret)
@@ -76,13 +78,33 @@ public class Frequencier implements Source.AudioReceiver {
 			}
 	}
 	
-	double[] cache = new double[4096];
-	int cache_len =  3072;
+	int size = 8192;
+	double[] cache = new double[8192];
+
+	private util.MFCC mfcc_;
+
+	
 	@Override
 	public void OnSamplesReceived(double[] db) 
 	{
-		Utils.Dbg("dblen:%d",db.length);
-		List<Frequency> freqs = new LinkedList<Frequency>();	
+		try 
+		{
+			System.arraycopy(db,0,cache,4096,4096);
+			catcher_.OnReceived(mfcc_.processWindow(cache,0), 4096);
+			for (int i =0;i < db.length - 8192; i+=4096)
+			{
+				catcher_.OnReceived(mfcc_.processWindow(db, i),4096);
+			}
+			System.arraycopy(db, db.length - 4096, cache, 0, 4096);
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		
+		/*List<Frequency> freqs = new LinkedList<Frequency>();	
 		double[] data = new double[4096];
 		int total = 0;
 		while (total <db.length)
@@ -101,7 +123,7 @@ public class Frequencier implements Source.AudioReceiver {
 				}
 				freqs = new LinkedList<Frequency>();	
 			}
-		}
+		}*/
 		
 /*		for(Frequency f:freqs)
 		{

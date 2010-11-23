@@ -18,6 +18,10 @@ import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import net.sf.javaml.distance.dtw.DTWSimilarity;
+import net.sf.javaml.core.DenseInstance;
+import net.sf.javaml.core.Instance;
+
 import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 
 import Common.FingerPrint;
@@ -46,8 +50,14 @@ public class Summator implements Catcher{
 		settings_ = settings;
 	}
 	
+	Vector<double[]> source = new Vector<double[]>();
+	
 	public void AddFingerPrint(FingerPrint fp)
 	{
+		for (double[] d: fp.mfcc.get(0))
+		{
+			source.add(d);
+		}
 		fingerPrints_.add(fp);
 		//comparers_.add(comparer);
 	}
@@ -108,56 +118,37 @@ public class Summator implements Catcher{
 	long next =0;
 	int total = 0;
 	int max = 0;
-	int index = 0;
+	int index = 4;
 	boolean started = false;
 	LinkedList<LinkedList<Frequency>> fr = new LinkedList<LinkedList<Frequency>>();
 	
+	Vector<double[]> mfcc_ = new Vector<double[]>();
+	
+	DTW dtw_ = new DTW();
+	DTWSimilarity dwt = new DTWSimilarity();
 	@Override
-	public boolean OnReceived(List<Frequency> frequency, long timeoffset) 
+	public boolean OnReceived(double[] mfcc, long timeoffset) 
 	{
-		if (!started &&  !frequency.isEmpty() && ((LinkedList<Frequency>)frequency).getFirst().level < 1) return true;
-		started = true;
-
-		fr.add((LinkedList<Frequency>) frequency);
+		//	Utils.Dbg("%d %d",time_,mfcc_.size());
+		if (mfcc[0] <1 ) return true;
+		mfcc_.add(mfcc);
+		time_+=timeoffset;
 		
-		if (fr.size() > 16)
+	
+		if (time_ >= settings_.WindowSize() / 2)
 		{
-			fr.removeFirst();
-		}
-		
-		if (fr.size() < 16) 
-		{
-			time_+=timeoffset;
-			return true;
-		}
-			
-		List<Frequency> sum = new LinkedList<Frequency>();
-		
-		for (LinkedList<Frequency> freq: fr)
-		{
-			Frequency.Merge(sum,freq);
-		}
-		
-		if (time_ % settings_.WindowSize() == 0 && max > 0)
-		{
-			total+=max;
-			Utils.Dbg("total:%d",total);
-			max = 0;
-		}
-			
-	//	Utils.DbgFrq(frequency);
-		
-		for (FingerPrint fp: fingerPrints_)
-		{
-			for (int i =0; i < fp.Frames(); ++i)
+			double x = dtw_.measure(fingerPrints_.get(0).mfcc.get(index), mfcc_);
+			//Utils.Dbg("%d: %f / %d",time_, x, index);
+			if (x >0.1)
 			{
-				List<Frequency> p = fp.Exists(i, sum);
-				max = Math.max(p.size(), max);
-				Utils.Dbg("%d   | index:%d/%d   size:%d",time_, i, time_/settings_.WindowSize(), p.size());
+				Utils.Dbg("%d: %f / %d",time_, x,index);
+				index++;
 			}
+			mfcc_.remove(0);
 		}
-
-		Utils.Dbg("");
+		
+		
+	
 		
 		/*Utils.Dbg(frequency);
 		LinkedList<Frequency> fr = MergeFrequency(frequency);
@@ -181,7 +172,6 @@ public class Summator implements Catcher{
 		{
 			c.OnReceived(captures, time_);
 		}	*/
-		time_+=timeoffset;
 		return true;
 	}
 
