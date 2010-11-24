@@ -29,86 +29,47 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	
 	private String id_;
 	private long time_;
-	private LinkedList<LinkedList<Frequency>> frequencies_  =  new LinkedList<LinkedList<Frequency>>();
-	private int levels_count_;
+	private Vector<Vector<double[]>> mfcc_ = new Vector<Vector<double[]>>();
+	private Vector<Double> means_ = new Vector<Double>(); 
+	private double sum_ = 0;
+	private double mean_ = 0;
 	
-	public long Time()
-	{
-		return time_;
-	}
-	public FingerPrint(String id, long time, int windowSize, int levelsCount)
+	public FingerPrint(String id)
 	{
 		id_ = id; 
-		time_ = time;
-		levels_count_ = levelsCount;
 	}
-
+	
 	public String Id() { return id_; }
 	
-	public int LevelsCount()
+	public Vector<double[]> Get(int index)
 	{
-		return levels_count_;
+		return mfcc_.get(index);
 	}
 
-	public int LevelsCount(int index)
+	public boolean Add(Vector<double[]> mfcc)
 	{
-		return frequencies_.get(index).size();
-	}
-	
-	public List<Frequency> Exists(int index, List<Frequency> frequency)
-	{
-		LinkedList<Frequency> list = frequencies_.get(index);
-		if (list == null) 
+		double v_mean = 0;
+		for (int j = 0; j < mfcc.size(); ++j)
 		{
-			return null;
-		}
-
-		List<Frequency> ret = new LinkedList<Frequency>();
-		
-		for (Frequency f : list)
-		{
-			if (frequency.contains(f))
+			double[] data = mfcc.get(j);
+			double m = 0;
+			for (int k = 0; k < data.length; ++k)
 			{
-				ret.add(f);
+				m+=data[k]*data[k];
 			}
+			m = Math.sqrt(m);
+			v_mean+=m;
 		}
-		return ret; 
-	}
-	
-	public Vector<Vector<double[]>> mfcc = new Vector<Vector<double[]>>();
-		
-	private int totalPeriods_ = 0;
-	private double maxLevel = 0;
-	private double minLevel = 0;
-	
-	public boolean Add(List<Frequency> frequency)
-	{
-		if (frequency.isEmpty()) 
-		{
-			frequencies_.add(null);	
-			return false;
-		}
-		totalPeriods_+=frequency.size();
-		maxLevel = Math.max(maxLevel, ((LinkedList<Frequency>)frequency).getFirst().level);
-		minLevel = Math.max(minLevel, ((LinkedList<Frequency>)frequency).getLast().level);
-		frequencies_.add((LinkedList<Frequency>)frequency);
+		v_mean = v_mean / mfcc.size();
+		sum_ +=v_mean;
+		means_.add(v_mean);
+		mfcc_.add(mfcc);
 		return true;
-	}
-
-	public int Count()
-	{
-		int i = 0;
-		for(LinkedList<Frequency> f : frequencies_)
-		{
-			if (f == null) continue;
-			i+=f.size();
-		}
-		return i;
 	}
 	
 	public int Frames()
 	{
-		return frequencies_.size();
+		return mfcc_.size();
 	}
 	
 	public void Serialize(String filename) throws IOException
@@ -122,24 +83,43 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	 
 	public void ThinOut()
 	{ 
-		mfcc.remove(0);
-		mfcc.remove(mfcc.size() -1);
-	 }
+		mean_ = sum_ / mfcc_.size();		
+		while (means_.get(0) < mean_ )
+		{
+			means_.remove(0);
+			mfcc_.remove(0);
+		}
+		while (means_.get(means_.size() - 1) < mean_)
+		{
+			means_.remove(means_.size() - 1);
+			mfcc_.remove(mfcc_.size() - 1);
+		}
+	}
+	
+	public double Mean(int index)
+	{
+		return means_.get(index);
+	}
+	
+	public double Mean()
+	{
+		return sum_ / mfcc_.size();
+	}
 	 
 	@Override
 	public String toString()
 	{
 		String str = new String();
 		
-		for (int i = 0 ; i < mfcc.size(); ++i)
+		for (int i = 0 ; i < mfcc_.size(); ++i)
 		{
 			str+=String.format("%d:\n", i);
 			
-			for (int j = 0; j < mfcc.get(i).size(); ++ j)
+			for (int j = 0; j < mfcc_.get(i).size(); ++ j)
 			{
-				for (int k = 0; k <  mfcc.get(i).get(j).length; ++k)
+				for (int k = 0; k <  mfcc_.get(i).get(j).length; ++k)
 				{
-					str+=String.format("%f ",  mfcc.get(i).get(j)[k]);
+					str+=String.format("%f ",  mfcc_.get(i).get(j)[k]);
 				}
 				str+="\n";
 			}

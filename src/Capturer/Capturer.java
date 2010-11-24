@@ -27,11 +27,9 @@ import Common.Source.Channel;
 
 public class Capturer implements Frequencier.Catcher
 {
-
 	private long time_ = 0;
 	Source source_ = null;
 	FingerPrint fp_;
-	
 	private Settings settings_;
 	
 	public Capturer(String filename, String id) throws Exception
@@ -41,14 +39,15 @@ public class Capturer implements Frequencier.Catcher
 		
 		source_ = new Source(stream, settings_);
 		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_));																					
-		fp_ = new FingerPrint(id,stream.getFrameLength(), settings_.WindowSize(), Common.Config.Instance().LevelsCount());		
+		fp_ = new FingerPrint(id);		
 		Utils.Dbg("FrameLength:%d",stream.getFrameLength());
 	}
 
 	public FingerPrint Process()
 	{
+		Utils.Dbg("Working...");
 		source_.Process();
-		Utils.Dbg("Process is over");
+		Utils.Dbg("The job is done");
 		fp_.ThinOut();	
 		Utils.Dbg(fp_);
 		return fp_;
@@ -59,12 +58,10 @@ public class Capturer implements Frequencier.Catcher
 	public boolean OnReceived(double[] frequency, long timeoffset) 
 	{
 		list.add(frequency);
-		Utils.Dbg("%d - %d", time_, timeoffset);
 		time_ += timeoffset;
-		
 		if (time_ % (settings_.WindowSize() / 2) == 0)
 		{
-			fp_.mfcc.add(list);
+			fp_.Add(list);
 			list = new Vector<double[]>();
 		}
 		

@@ -2,11 +2,6 @@ package Streamer;
 
 import java.util.Vector;
 
-/**
- * @author SVolkov
- *         Date: 26 жовт 2010
- *         Time: 16:28:47
- */
 public class DTW {
 
     private double pointDistance(int i, int j, Vector<double[]> doublesOne, Vector<double[]> doublesTwo) {

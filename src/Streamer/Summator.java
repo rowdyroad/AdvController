@@ -18,10 +18,6 @@ import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import net.sf.javaml.distance.dtw.DTWSimilarity;
-import net.sf.javaml.core.DenseInstance;
-import net.sf.javaml.core.Instance;
-
 import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
 
 import Common.FingerPrint;
@@ -54,12 +50,7 @@ public class Summator implements Catcher{
 	
 	public void AddFingerPrint(FingerPrint fp)
 	{
-		for (double[] d: fp.mfcc.get(0))
-		{
-			source.add(d);
-		}
 		fingerPrints_.add(fp);
-		//comparers_.add(comparer);
 	}
 
 	private LinkedList<Frequency> MergeFrequency (Frequency[] frequency)
@@ -125,53 +116,74 @@ public class Summator implements Catcher{
 	Vector<double[]> mfcc_ = new Vector<double[]>();
 	
 	DTW dtw_ = new DTW();
-	DTWSimilarity dwt = new DTWSimilarity();
+	
+	
+	class FrameWaiter
+	{
+		long time;
+		int index;
+		int totals;
+		FingerPrint fp;
+		public FrameWaiter(FingerPrint fp, long time)
+		{
+			this.fp = fp;
+			this.time = time;
+			this.index = 1;
+			this.totals=  1;
+		}
+	}
+	
+	
+	
+	LinkedList<FrameWaiter> waiters_ = new LinkedList<FrameWaiter>();
 	@Override
 	public boolean OnReceived(double[] mfcc, long timeoffset) 
 	{
-		//	Utils.Dbg("%d %d",time_,mfcc_.size());
-		if (mfcc[0] <1 ) return true;
 		mfcc_.add(mfcc);
 		time_+=timeoffset;
 		
+		if (time_ < settings_.WindowSize() / 2) return true;
 	
-		if (time_ >= settings_.WindowSize() / 2)
+		FrameWaiter limit = null;
+		
+		for (FingerPrint fp: fingerPrints_)
 		{
-			double x = dtw_.measure(fingerPrints_.get(0).mfcc.get(index), mfcc_);
-			//Utils.Dbg("%d: %f / %d",time_, x, index);
-			if (x >0.1)
+			double x = dtw_.measure(fp.Get(0), mfcc_);
+			if ( x > 0.1 )
 			{
-				Utils.Dbg("%d: %f / %d",time_, x,index);
-				index++;
+				FrameWaiter fw = new FrameWaiter(fp, time_);
+				if (limit == null)
+				{
+					limit = fw;
+				}
+				Utils.Dbg("%d add to waiter:%s",time_, fp.Id());
+				waiters_.add(fw);				
 			}
-			mfcc_.remove(0);
 		}
 		
-		
-	
-		
-		/*Utils.Dbg(frequency);
-		LinkedList<Frequency> fr = MergeFrequency(frequency);
-		if (fr == null)
-		{			
-			time_+=timeoffset;
-			return true;
-		}
-		if (captures.size() >= Common.Config.Instance().OverlappedCoef())
+		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
+		for (FrameWaiter fw: waiters_)
 		{
-			captures.removeFirst();
-		}
-		captures.add(fr);
-		if (captures.size() < Common.Config.Instance().OverlappedCoef()) 
-		{
-			time_+=timeoffset;
-			return true;
+			if (fw == limit) break;
+			double x = dtw_.measure(fw.fp.Get(fw.index), mfcc_);
+			if (x > 0.1)
+			{
+				fw.index++;
+				fw.totals++;
+				Utils.Dbg("%d/%d  compared:%s  index:%d totals:%d", time_, time_ - fw.time, fw.fp.Id(), fw.index,fw.totals);
+				continue;
+			}
+			
+			if (time_ > fw.time + fw.fp.Frames() * settings_.WindowSize()/2)
+			{
+				Utils.Dbg("%s add to removed", fw.fp.Id());
+				removes.add(fw);
+			}
 		}
 		
-		for (Comparer c: comparers_)
-		{
-			c.OnReceived(captures, time_);
-		}	*/
+		
+		waiters_.removeAll(removes);		
+		mfcc_.remove(0);
 		return true;
 	}
 
