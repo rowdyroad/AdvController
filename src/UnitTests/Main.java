@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import Common.AltFFT;
+import Common.Overlapper;
 import Common.Utils;
 
 public class Main {
@@ -184,9 +184,42 @@ public class Main {
 	}
 	
 	
+	public static void testOver()
+	{
+		double[]  d = {1,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,0,1,2,4,5,6,7,9,1,2,3,4,6,7,8,9,0};
+		
+		Overlapper ov = new Overlapper(10, 4);
+		
+		while (true)
+		{
+			double [] ret = ov.Overlapp(d);
+			if (ret == null) break;
+			
+			for (int i =0 ;i < ret.length;++i)
+			{
+				System.out.printf("%.00f ",ret[i]);
+			}
+			System.out.println();
+		}
+		
+		
+		double[]  d1 = {9,8,7,6,5,4,3,2,1,2,2,3,4,4,5,6,7,8,9,0,1,2,4,5,6,7,9,1,2,3,4,6,7,8,9,0};
+		while (true)
+		{
+			double [] ret = ov.Overlapp(d1);
+			if (ret == null) break;
+			
+			for (int i =0 ;i < ret.length;++i)
+			{
+				System.out.printf("%.00f ",ret[i]);
+			}
+			 System.out.println();
+		}
+		
+	}
+	
 	public static void main (String args [])
 	{
-		ThreadTest tt = new ThreadTest();
-		tt.z();
+		testOver();
 	}
 }

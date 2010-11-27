@@ -50,6 +50,7 @@ public final class FFT
   public static final int WND_USER_DEFINED = 8;
   /** used to specify a Hanning Z window function */
   public static final int WND_HANNINGZ = 9;  
+  public static final int WND_BLACKMAN_NUTTALL= 10;
 
   private double[] windowFunction;
   private double windowFunctionSum;
@@ -170,6 +171,9 @@ public final class FFT
 	 *  @throws IllegalArgumentException if the length of the input data is
 	 *  not a power of 2
 	 */
+  
+  
+  
 	private void fft(double re[], double im[], int direction)
   {
 		int n = re.length;
@@ -401,8 +405,19 @@ public final class FFT
       windowFunction[i]	= 0.5 * (1 - Math.cos((twoPI*i)/size));
   }
 
+private void blackmanNuttall(int size)
+{
+    int start = (windowFunction.length - size) / 2;
+    int stop = (windowFunction.length + size) / 2;
+    
+	for (int i =0; start < stop; start++, ++i)
+	{
+		double w = twoPI * i / windowSize;
+		windowFunction[i] =  (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
+	}
+}
 
-	/** Fill an array with the values of a minimum 4-sample Blackman-Harris
+  /** Fill an array with the values of a minimum 4-sample Blackman-Harris
 	 *  window function
 	 *  @param data the array to be filled
 	 *  @param size the number of non zero values; if the array is larger than
@@ -536,6 +551,7 @@ public final class FFT
 		switch (windowFunctionType)
 		{
 			case WND_NONE: 	break;
+			case WND_BLACKMAN_NUTTALL: blackmanNuttall(support); break;
 			case WND_RECT:		rectangle(support);				break;
 			case WND_HAMMING:	hamming(support);				break;
 			case WND_HANNING:   hanning(support);				break;

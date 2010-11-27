@@ -163,7 +163,7 @@ public class MFCC
     dctMatrix = getDCTMatrix();
 
     //create power fft object
-    normalizedPowerFFT = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, FFT.WND_HANNING);
+    normalizedPowerFFT = new FFT(FFT.FFT_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
     
     //compute rescale factor to rescale and normalize at once (default is 96dB = 2^16)
     scale = (Math.pow(10, 96 / 20));    
@@ -442,7 +442,7 @@ public class MFCC
    * @throws IOException if there are any problems regarding the inputstream
    * @throws IllegalArgumentException raised if method contract is violated
    */
-  public double[][] process(double[] input) throws IllegalArgumentException, IOException
+  public Vector<double[]> process(double[] input) throws IllegalArgumentException, IOException
   {
     //check for null
     if(input == null)
@@ -453,11 +453,13 @@ public class MFCC
         throw new IllegalArgumentException("Input data must be multiple of hop size (windowSize/2).");
 
     //create return array with appropriate size
-    double[][] mfcc = new double[(input.length/hopSize)-1][numberCoefficients];
-
+    Vector<double[]> mfcc = new Vector<double[]>();
+    mfcc.setSize((input.length/hopSize)-1);
+    
+    
     //process each window of this audio segment
     for(int i = 0, pos = 0; pos < input.length - hopSize; i++, pos+=hopSize)
-      mfcc[i] = processWindow(input, pos);
+      mfcc.set(i, processWindow(input, pos));
 
     return mfcc;
   }

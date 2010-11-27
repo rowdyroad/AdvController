@@ -61,7 +61,6 @@ public class Streamer
 	
 	public void AddFingerPrint(FingerPrint fp)
 	{
-		Utils.Dbg(fp);
 		fingerPrints_.add(fp);
 	}
 	
@@ -72,13 +71,12 @@ public class Streamer
 	
 	public void Process()
 	{
-		Summator sm = new Summator(settings_);
-		Resulter resulter = new ResultSubmiter();
+		Summator sm = new Summator(settings_,new ResultSubmiter());
 		for (FingerPrint fp: fingerPrints_)
 		{
 			sm.AddFingerPrint(fp);
 		}
-		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_));
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,4096));
 		Utils.Dbg("listening...");		
 		source_.Process();
 	}

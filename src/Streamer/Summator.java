@@ -1,150 +1,194 @@
 package Streamer;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.Vector;
-import java.util.Map.Entry;
-
-import com.sun.corba.se.impl.javax.rmi.CORBA.Util;
-
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Utils;
 import Common.Frequencier.Catcher;
-import Common.Frequency;
 
 public class Summator implements Catcher{
-
-	private List<Comparer> comparers_ = new LinkedList<Comparer>();
-	private Settings settings_ = null;
-	private Long time_ = new Long(0); 
-	private LinkedList<Frequency[]> list = new LinkedList<Frequency[]>();
-	private LinkedList<LinkedList<Frequency>> captures = new LinkedList<LinkedList<Frequency>>();
-	private Writer wr;
-	private List<FingerPrint> fingerPrints_ = new LinkedList<FingerPrint>();
-	public Summator(Settings settings)
+	
+	private class FingerPrintWrapper
 	{
-		  try {
-			wr = new BufferedWriter(new FileWriter(new File("log")));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		boolean maxed = false;
+		double last = 0;
+		FingerPrint fp;
+		public FingerPrintWrapper(FingerPrint fp)
+		{
+			this.fp = fp;
 		}
-		settings_ = settings;
 	}
 	
-	Vector<double[]> source = new Vector<double[]>();
+	private class FrameWaiter
+	{
+		long time;
+		Vector<Long> offset = new Vector<Long>();
+		
+		double max_offset = 0;
+		int offset_index = 0;
+		int index = 1;
+		int id;
+		FingerPrint fp;
+		public FrameWaiter(FingerPrint fp, long time)
+		{
+			id=++fw_id_;
+			this.fp = fp;
+			this.time = time;
+			
+			long off = time % settings_.WindowSize();
+			for (int i = 2; i >  0; --i)
+			{
+				long  x = off - 4096 * i;
+				x = (x < 0 ) ? settings_.WindowSize() + x : x;
+				offset.add(x);
+			}
+			offset.add(off);
+			for (int  i = 1; i < 3; ++i)
+			{
+				long  x = off + 4096 * i;
+				x = (x  >= settings_.WindowSize()) ? x - settings_.WindowSize() : x; 
+				offset.add(x);
+			}
+			
+			//Utils.Dbg("%d, offsets:%d  %d (%d) %d  %d",off, this.offset.get(0),this.offset.get(1),this.offset.get(2),this.offset.get(3),this.offset.get(4));
+		}
+	}
+	static private int fw_id_ = 0;
+
+	private DTW dtw_ = new DTW();
+	private Settings settings_ = null;
+	private long time_  =  0; 
+	private LinkedList<FrameWaiter> waiters_ = new LinkedList<FrameWaiter>();	
+	private List<FingerPrintWrapper> fingerPrints_ = new LinkedList<FingerPrintWrapper>();
+	private Resulter resulter_;
+	
+	public Summator(Settings settings, Resulter resulter)
+	{
+		settings_ = settings;
+		resulter_ = resulter;
+	}
 	
 	public void AddFingerPrint(FingerPrint fp)
 	{
-		fingerPrints_.add(fp);
+		fingerPrints_.add(new FingerPrintWrapper(fp));
 	}
-
-	private LinkedList<Frequency> MergeFrequency (Frequency[] frequency)
+		
+	@Override
+	public boolean OnReceived(Vector<double[]> mfcc, long timeoffset) 
 	{
-		if (list.size() >= Common.Config.Instance().OverlappedCoef())
+		FrameWaiter limit = null;		
+		Long offset = new Long( time_ % settings_.WindowSize());
+		for (FingerPrintWrapper fpw: fingerPrints_)
 		{
-			list.removeFirst();
-		}
-		list.add(frequency);
-		
-		if (list.size() < Common.Config.Instance().OverlappedCoef()) return null;
-		double max = 0;
-		for (Frequency[] f: list)
-		{
-			max = Math.max(max, f[0].level);
-		}
-		if (max < 1) return null;
-		
-		LinkedList<Frequency> pat  = new LinkedList<Frequency>();
-		
-		for (Frequency[] f: list)
-		{
-			for (int i = 0; i  < f.length; ++i)
+			double x = dtw_.measure(fpw.fp.Get(0), mfcc);
+			if ( x > 0.1 )
 			{
-				int index = pat.indexOf(f[i]);
-				if (index == -1)
+				double diff = x - fpw.last;
+				//Utils.Dbg("%d| add to waiter:%s/%f/%f/%f",time_,time_ % settings_.WindowSize(), fpw.fp.Id(),x,diff,max_);
+				if (diff  <  0)
 				{
-					pat.add(f[i]);
+					if (!fpw.maxed)
+					{
+						fpw.maxed = true;
+						FrameWaiter fw = new FrameWaiter(fpw.fp, time_);
+						//Utils.Dbg("%d| ADD: %s[%d]  %d / %f",time_, fpw.fp.Id(),fw.id, offset, fpw.last);
+						if (limit == null)
+						{
+							limit = fw;
+						}
+						waiters_.add(fw);						
+					}
+				}else
+				{
+					fpw.maxed = false;
 				}
-				else
+				fpw.last = x;
+			}
+		}
+		
+		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
+		
+		for (FrameWaiter fw: waiters_)
+		{
+			if (fw == limit) 
+			{
+				//Utils.Dbg("%d| IGNORE: :%s[%d]",time_, fw.fp.Id(), fw.id);
+				break;
+			}
+			
+			if (time_ > fw.time  + fw.fp.Time()) 
+			{				
+			//	Utils.Dbg("%d| TIME: %s[%d]",time_, fw.fp.Id(), fw.id);
+				removes.add(fw);
+				continue;
+			}
+			
+			if (fw.offset_index < fw.offset.size() && fw.offset.get(fw.offset_index).equals(offset))
+			{	
+				double x = dtw_.measure(fw.fp.Get(fw.index), mfcc);
+				//Utils.Dbg("%d | %s[%d]  offset_index:%d offset:%d /%f", time_, fw.fp.Id(), fw.id,fw.offset_index, fw.offset.get(fw.offset_index), x);
+				fw.max_offset = Math.max(fw.max_offset, x);
+				++fw.offset_index;
+			}
+			else
+			{
+				if (fw.offset_index == fw.offset.size())
 				{
-					Double level = pat.get(index).level;
-					pat.get(index).level = Math.max(f[i].level,level);
+					
+					//Utils.Dbg("max:%f",fw.max_offset);
+					if (fw.max_offset > 0.1)
+					{
+						fw.index++;
+						if ((double)fw.index / fw.fp.Frames() > 0.6)
+						{
+							if (resulter_.OnFound(fw.fp.Id(), System.currentTimeMillis() / 1000))
+							{
+								removes.addAll(waiters_);
+								Runtime.getRuntime().gc();
+								break;
+							}
+						}
+						fw.offset_index  =  0;
+						fw.max_offset = 0;
+					}
+					else
+					{
+							//Utils.Dbg("%d| NOTMATCH: %s[%d]  index:%d/%f", time_, fw.fp.Id(), fw.id,fw.index, x);
+						removes.add(fw);
+					}
 				}
 			}
 		}
 		
-		Collections.sort(pat, new Comparator<Frequency>() {
+		waiters_.removeAll(removes);
+		
+		
+		Collections.sort(waiters_, new Comparator<FrameWaiter>(){
+
 			@Override
-			public int compare(Frequency arg0, Frequency arg1) {
+			public int compare(FrameWaiter arg0, FrameWaiter arg1) {
 				// TODO Auto-generated method stub
-				return -arg0.level.compareTo(arg1.level);
+				return - new Integer(arg0.index).compareTo(new Integer(arg1.index));
 			}});
 		
+		if (! waiters_.isEmpty())
+		{
+			FrameWaiter fw = waiters_.getFirst();
+			//Utils.Dbg("%d| MATCH: %s[%d]  index:%d/%f",time_, fw.fp.Id(),fw.id, fw.index, fw.last);
+		}
 		
-		while (pat.size() > Common.Config.Instance().LevelsCount())
-		{
-			pat.removeLast();
-		}
-
-		return pat;
-	}
-	
-	
-	FingerPrint fp;
-	long next =0;
-	int total = 0;
-	int max = 0;
-	int index = 4;
-	boolean started = false;
-	LinkedList<LinkedList<Frequency>> fr = new LinkedList<LinkedList<Frequency>>();
-	
-	Vector<double[]> mfcc_ = new Vector<double[]>();
-	
-	DTW dtw_ = new DTW();
-	
-	
-	class FrameWaiter
-	{
-		long time;
-		int index;
-		int totals;
-		FingerPrint fp;
-		public FrameWaiter(FingerPrint fp, long time)
-		{
-			this.fp = fp;
-			this.time = time;
-			this.index = 1;
-			this.totals=  1;
-		}
-	}
-	
-	
-	
-	LinkedList<FrameWaiter> waiters_ = new LinkedList<FrameWaiter>();
-	@Override
-	public boolean OnReceived(double[] mfcc, long timeoffset) 
-	{
+		time_+=timeoffset;
+		
+		/*
 		mfcc_.add(mfcc);
 		time_+=timeoffset;
 		
-		if (time_ < settings_.WindowSize() / 2) return true;
-	
-		FrameWaiter limit = null;
+		if (time_ < settings_.WindowSize() / 4) return true;
+		
 		
 		for (FingerPrint fp: fingerPrints_)
 		{
@@ -182,8 +226,8 @@ public class Summator implements Catcher{
 		}
 		
 		
-		waiters_.removeAll(removes);		
-		mfcc_.remove(0);
+			
+		mfcc_.remove(0);*/
 		return true;
 	}
 

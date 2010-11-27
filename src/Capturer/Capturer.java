@@ -38,7 +38,7 @@ public class Capturer implements Frequencier.Catcher
 		settings_ = new Settings(stream.getFormat());
 		
 		source_ = new Source(stream, settings_);
-		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_));																					
+		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize()));																					
 		fp_ = new FingerPrint(id);		
 		Utils.Dbg("FrameLength:%d",stream.getFrameLength());
 	}
@@ -55,16 +55,10 @@ public class Capturer implements Frequencier.Catcher
 
 	Vector<double[]> list = new Vector<double[]>();
 	@Override
-	public boolean OnReceived(double[] frequency, long timeoffset) 
+	public boolean OnReceived(Vector<double[]> frequency, long timeoffset) 
 	{
-		list.add(frequency);
-		time_ += timeoffset;
-		if (time_ % (settings_.WindowSize() / 2) == 0)
-		{
-			fp_.Add(list);
-			list = new Vector<double[]>();
-		}
-		
+		fp_.Add(frequency, time_);
+		time_+=timeoffset;
 		return true;
 	}
 

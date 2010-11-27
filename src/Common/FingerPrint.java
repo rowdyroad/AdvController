@@ -30,7 +30,8 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	private String id_;
 	private long time_;
 	private Vector<Vector<double[]>> mfcc_ = new Vector<Vector<double[]>>();
-	private Vector<Double> means_ = new Vector<Double>(); 
+	private Vector<Double> means_ = new Vector<Double>();
+	private Vector<Long> times_ = new Vector<Long>();
 	private double sum_ = 0;
 	private double mean_ = 0;
 	
@@ -46,7 +47,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		return mfcc_.get(index);
 	}
 
-	public boolean Add(Vector<double[]> mfcc)
+	public boolean Add(Vector<double[]> mfcc, long time)
 	{
 		double v_mean = 0;
 		for (int j = 0; j < mfcc.size(); ++j)
@@ -64,6 +65,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		sum_ +=v_mean;
 		means_.add(v_mean);
 		mfcc_.add(mfcc);
+		times_.add(time);
 		return true;
 	}
 	
@@ -88,14 +90,20 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		{
 			means_.remove(0);
 			mfcc_.remove(0);
+			times_.remove(0);
 		}
 		while (means_.get(means_.size() - 1) < mean_)
 		{
 			means_.remove(means_.size() - 1);
 			mfcc_.remove(mfcc_.size() - 1);
+			times_.remove(times_.size()-1);
 		}
 	}
 	
+	public long Time()
+	{
+		return times_.get(times_.size()-1) -  times_.get(0);
+	}
 	public double Mean(int index)
 	{
 		return means_.get(index);
@@ -113,7 +121,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		
 		for (int i = 0 ; i < mfcc_.size(); ++i)
 		{
-			str+=String.format("%d:\n", i);
+			str+=String.format("%d[%d]:\n", i,times_.get(i));
 			
 			for (int j = 0; j < mfcc_.get(i).size(); ++ j)
 			{
