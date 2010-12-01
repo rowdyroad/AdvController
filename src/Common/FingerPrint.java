@@ -8,6 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -29,9 +30,9 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	
 	private String id_;
 	private long time_;
-	private Vector<Vector<double[]>> mfcc_ = new Vector<Vector<double[]>>();
-	private Vector<Double> means_ = new Vector<Double>();
-	private Vector<Long> times_ = new Vector<Long>();
+	private ArrayList<double[][]> mfcc_ = new ArrayList<double[][]>();
+	private ArrayList<Double> means_ = new ArrayList<Double>();
+	private ArrayList<Long> times_ = new ArrayList<Long>();
 	private double sum_ = 0;
 	private double mean_ = 0;
 	
@@ -42,17 +43,17 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	
 	public String Id() { return id_; }
 	
-	public Vector<double[]> Get(int index)
+	public double[][] Get(int index)
 	{
 		return mfcc_.get(index);
 	}
 
-	public boolean Add(Vector<double[]> mfcc, long time)
+	public boolean Add(double[][] mfcc, long time)
 	{
 		double v_mean = 0;
-		for (int j = 0; j < mfcc.size(); ++j)
+		for (int j = 0; j < mfcc.length; ++j)
 		{
-			double[] data = mfcc.get(j);
+			double[] data = mfcc[j];
 			double m = 0;
 			for (int k = 0; k < data.length; ++k)
 			{
@@ -61,7 +62,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			m = Math.sqrt(m);
 			v_mean+=m;
 		}
-		v_mean = v_mean / mfcc.size();
+		v_mean = v_mean / mfcc.length;
 		sum_ +=v_mean;
 		means_.add(v_mean);
 		mfcc_.add(mfcc);
@@ -123,11 +124,11 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		{
 			str+=String.format("%d[%d]:\n", i,times_.get(i));
 			
-			for (int j = 0; j < mfcc_.get(i).size(); ++ j)
+			for (int j = 0; j < mfcc_.get(i).length; ++ j)
 			{
-				for (int k = 0; k <  mfcc_.get(i).get(j).length; ++k)
+				for (int k = 0; k <  mfcc_.get(i)[j].length; ++k)
 				{
-					str+=String.format("%f ",  mfcc_.get(i).get(j)[k]);
+					str+=String.format("%f ",  mfcc_.get(i)[j][k]);
 				}
 				str+="\n";
 			}

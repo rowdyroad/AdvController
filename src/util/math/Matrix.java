@@ -16,6 +16,8 @@ import java.io.Serializable;
 import java.io.OutputStream;
 import java.io.InputStream;
 import javax.xml.stream.*;
+
+import Common.Utils;
 /**
    Jama = Java Matrix class.
 <P>
@@ -770,6 +772,7 @@ public class Matrix implements Cloneable, Serializable
    @exception  IllegalArgumentException Matrix inner dimensions must agree.
    */
 
+   //n:4097 m:40 B.n:1 B.m:4097
    public Matrix times (Matrix B) {
       if (B.m != n) {
          throw new IllegalArgumentException("Matrix inner dimensions must agree.");
@@ -785,6 +788,8 @@ public class Matrix implements Cloneable, Serializable
             double[] Arowi = A[i];
             double s = 0;
             for (int k = 0; k < n; k++) {
+            	//Utils.Dbg("i1:%d j1:%d  %f %f", i, k,Arowi[k],Bcolj[k]);
+            //Utils.Dbg( " %f * %f = %f",Arowi[k],Bcolj[k],Arowi[k]*Bcolj[k]);
                s += Arowi[k]*Bcolj[k];
             }
             C[i][j] = s;

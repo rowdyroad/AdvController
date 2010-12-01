@@ -1,24 +1,11 @@
 package Capturer;
 import java.io.File;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.Map.Entry;
 import java.util.Vector;
 
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 
-import Common.Config;
 import Common.FingerPrint;
-import Common.Frequency;
 import Common.Settings;
 import Common.Source;
 import Common.Frequencier;
@@ -55,7 +42,7 @@ public class Capturer implements Frequencier.Catcher
 
 	Vector<double[]> list = new Vector<double[]>();
 	@Override
-	public boolean OnReceived(Vector<double[]> frequency, long timeoffset) 
+	public boolean OnReceived(double[][] frequency, long timeoffset) 
 	{
 		fp_.Add(frequency, time_);
 		time_+=timeoffset;

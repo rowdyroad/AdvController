@@ -27,7 +27,8 @@ public static void main (String args []) throws Exception {
 		try
 		{
 			Utils.Dbg(list[i]);
-			stm.AddFingerPrint(FingerPrint.Deserialize(Config.Instance().PromosPath()+list[i]));
+			FingerPrint fp = FingerPrint.Deserialize(Config.Instance().PromosPath()+list[i]);
+			stm.AddFingerPrint(fp);
 			Utils.Dbg("Serialized:%s",Config.Instance().PromosPath()+list[i]);
 		}
 		catch (Exception e)

@@ -3,6 +3,8 @@ package util;
 import java.util.Vector;
 import java.io.IOException;
 
+import Common.Utils;
+
 import util.math.Matrix;
 
 /**
@@ -54,7 +56,9 @@ public class MFCC
   private Matrix melFilterBanks;
   private FFT normalizedPowerFFT;
   private double scale;
-
+  private int fftSize;
+  private double[] ret;
+  private static double log10 = 10 * (1 / Math.log(10)); // log for base 10 and scale by factor 10
 
   /**
    * Creates a new MFCC object with default window size of 512 for the given
@@ -108,6 +112,8 @@ public class MFCC
    * @param numberFilters int number of mel-filters to place in the interval
    * @throws IllegalArgumentException raised if method contract is violated
    */
+  
+  private Matrix xM;
   public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, double minFreq, double maxFreq, int numberFilters) throws IllegalArgumentException
   {
     //check for correct window size
@@ -157,10 +163,15 @@ public class MFCC
     //create buffers
     inputData = new double[windowSize];
     buffer = new double[windowSize];
+    fftSize = windowSize / 2;
+   
+    
 
     //store filter weights and DCT matrix due to performance reason
     melFilterBanks = getMelFilterBanks();
     dctMatrix = getDCTMatrix();
+
+    ret = new double[melFilterBanks.getRowDimension()];
 
     //create power fft object
     normalizedPowerFFT = new FFT(FFT.FFT_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
@@ -380,57 +391,6 @@ public class MFCC
   }
 
   /**
-   * Performs the transformation of the input data to MFCCs. This is done by
-   * splitting the given data into windows and processing each of these windows
-   * with processWindow().
-   *
-   * @param in AudioPreProcessor input data is a complete Audio stream, must
-   *                             have the same sample rate like this sone object,
-   *                             must not be a null value
-   * @return Vector this vector contains a double array of Sone value for each
-   *                window
-   * @throws IOException if there are any problems regarding the inputstream
-   * @throws IllegalArgumentException raised if method contract is violated
-   */
-  public Vector<double[]> process(AudioPreProcessor in) throws IllegalArgumentException, IOException
-  {
-    //check in
-    if(in == null)
-      throw new IllegalArgumentException("the audio preprocessor must not be a null value");
-
-    //check for correct input format
-    if(in.getSampleRate() != sampleRate)
-        throw new IllegalArgumentException("sample rates of inputstream differs from sample rate of the sone processor");
-
-    //create vector holding the mfcc vector of each frame
-    Vector<double[]> mfcc = new Vector<double[]>();
-    
-    
-    //read whole window
-    int samplesRead = in.append(inputData, 0, windowSize);
-
-    if(samplesRead == windowSize)
-    {
-    	//process all other frames
-    	samplesRead = hopSize;
-    	while (samplesRead == hopSize)
-    	{
-    		//process the current window
-    		mfcc.add(processWindow(inputData, 0));
-    		
-    		//move data in window (overleap)
-    		for (int i = hopSize, j = 0; i < windowSize; j++, i++)
-    			inputData[j] = inputData[i];
-
-    		//read new data
-    		samplesRead = in.append(inputData, windowSize-hopSize, hopSize);
-    	}
-    }
-
-    return mfcc;
-  }
-
-  /**
    * Performs the transformation of the input data to MFCCs.
    * This is done by splitting the given data into windows and processing
    * each of these windows with processWindow().
@@ -442,7 +402,7 @@ public class MFCC
    * @throws IOException if there are any problems regarding the inputstream
    * @throws IllegalArgumentException raised if method contract is violated
    */
-  public Vector<double[]> process(double[] input) throws IllegalArgumentException, IOException
+  public double[][] process(double[] input) throws IllegalArgumentException, IOException
   {
     //check for null
     if(input == null)
@@ -453,13 +413,11 @@ public class MFCC
         throw new IllegalArgumentException("Input data must be multiple of hop size (windowSize/2).");
 
     //create return array with appropriate size
-    Vector<double[]> mfcc = new Vector<double[]>();
-    mfcc.setSize((input.length/hopSize)-1);
-    
-    
+    double[][] mfcc = new double[(input.length/hopSize)-1][numberCoefficients];
+
     //process each window of this audio segment
     for(int i = 0, pos = 0; pos < input.length - hopSize; i++, pos+=hopSize)
-      mfcc.set(i, processWindow(input, pos));
+      mfcc[i] = processWindow(input, pos);
 
     return mfcc;
   }
@@ -476,59 +434,50 @@ public class MFCC
   }
 
 
-  /**
-   * Transforms one window of MFCCs. The following steps are
-   * performed: <br>
-   * <br>
-   * (1) normalized power fft with hanning window function<br>
-   * (2) convert to Mel scale by applying a mel filter bank<br>
-   * (3) Conversion to db<br>
-   * (4) finally a DCT is performed to get the mfcc<br>
-   *<br>
-   * This process is mathematical identical with the process described in [1].
-   *
-   * @param window double[] data to be converted, must contain enough data for
-   *                        one window
-   * @param start int start index of the window data
-   * @return double[] the window representation in Sone
-   * @throws IllegalArgumentException raised if method contract is violated
-   */
-  public double[] processWindow(double[] window, int start) throws IllegalArgumentException
+ 
+  public double[] processWindow(double[] window, int start)
   {
-    //number of unique coefficients, and the rest are symmetrically redundant
-    int fftSize = (windowSize / 2) + 1;
+	  if(start < 0)
+	      throw new IllegalArgumentException("start must be a positve value");
 
-    //check start
-    if(start < 0)
-      throw new IllegalArgumentException("start must be a positve value");
+	  //check window size
+	  if(window == null || window.length < windowSize)
+		  throw new IllegalArgumentException("the given data array must not be a null value and must contain data for one window");
 
-    //check window size
-    if(window == null || window.length - start < windowSize)
-      throw new IllegalArgumentException("the given data array must not be a null value and must contain data for one window");
+	  //just copy to buffer and rescaled the input samples according to the original matlab implementation to 96dB
+	  for (int j = 0; j < windowSize; j++)
+		  buffer[j] = window[j + start] * scale;
 
-    //just copy to buffer and rescaled the input samples according to the original matlab implementation to 96dB
-    for (int j = 0; j < windowSize; j++)
-      buffer[j] = window[j + start] * scale;
-
-    //perform power fft
-    normalizedPowerFFT.transform(buffer, null);
-
-    //use all coefficient up to the nyquist frequency (ceil((fftSize+1)/2))
-    Matrix x = new Matrix(buffer, windowSize);
-    x = x.getMatrix(0, fftSize-1, 0, 0); //fftSize-1 is the index of the nyquist frequency
-
-    //apply mel filter banks
-    x = melFilterBanks.times(x);
-
-    //to db
-    double log10 = 10 * (1 / Math.log(10)); // log for base 10 and scale by factor 10
-    x.thrunkAtLowerBoundary(1);
-    x.logEquals();
-    x.timesEquals(log10);
-
-    //compute DCT
-    x = dctMatrix.times(x);
-
-    return x.getColumnPackedCopy();
+	  //perform power fft
+	  normalizedPowerFFT.transform(buffer, null);
+	  	    
+	  for (int i = 0; i < ret.length; ++i)
+	  {
+		  ret[i] = 0;
+		  for (int j =0; j < fftSize; ++j)
+		  {
+			ret[i] += melFilterBanks.get(i, j) * buffer[j];
+		  }
+		  
+		  if (ret[i] < 1)
+		  {
+			  ret[i] = 0;
+		  }
+		  else
+		  {
+			  ret[i] = log10 * Math.log(ret[i]);
+		  }
+	  }
+	  
+	  double [] result =  new double[dctMatrix.getRowDimension()];
+	  for (int i = 0; i < result.length; ++i)
+	  {
+		  result[i] = 0;
+		  for (int j = 0; j < ret.length; ++j)
+		  {
+			  result[i]+= dctMatrix.get(i, j) * ret[j]; 
+		  }
+	  }
+	  return result;
   }
 }

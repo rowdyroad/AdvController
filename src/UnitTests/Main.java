@@ -7,6 +7,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Vector;
+
+import util.math.Matrix;
 
 import Common.Overlapper;
 import Common.Utils;
@@ -213,13 +216,78 @@ public class Main {
 			{
 				System.out.printf("%.00f ",ret[i]);
 			}
-			 System.out.println();
+			  System.out.println();
 		}
 		
 	}
 	
 	public static void main (String args [])
 	{
-		testOver();
+		//testOver();
+		/*Vector<Double> d = new Vector<Double>();
+		
+		d.setSize(10000000);
+		for (int i = 0; i < d.size(); ++i)
+		{
+			d.set(i, new Double(0));
+		}
+		long time = System.currentTimeMillis();
+		
+		double sum = 0;
+		for (int i = 0; i < d.size(); ++i)
+		{
+			sum+=d.get(i); 
+		}
+		
+		Utils.Dbg("Vector: %d", System.currentTimeMillis() - time);
+	
+		time = System.currentTimeMillis();
+		double [] da = new double[10000000];
+		for (int i = 0; i < da.length; ++i)
+		{
+			sum+=da[i]; 
+		}
+		
+		Utils.Dbg("Array: %d", System.currentTimeMillis() - time);
+	*/
+		double[] b = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+		
+		Matrix m = new Matrix(b, 8);
+		
+		double[][] r = m.getArray();
+		
+		for(int i =0;i<r.length;++i)
+		{
+			for (int j = 0;j < r[i].length; ++j)
+			{
+				System.out.printf("%.01f\t",r[i][j]);
+			}
+			System.out.println();
+		}
+		
+		int i0 = 0;
+		int i1 = 4;
+		int j0 = 0;
+		int j1 = 0;
+		   Matrix X = new Matrix(i1-i0+1,j1-j0+1);
+		      double[][] B = X.getArray();
+		      try {
+		         for (int i = i0; i <= i1; i++) {
+		            for (int j = j0; j <= j1; j++) {
+		               B[i-i0][j-j0] = r[i][j];
+		               Utils.Dbg("%d:%d - %f",i-i0,j-j0,r[i][j]);
+		            }
+		         }
+		      } catch(ArrayIndexOutOfBoundsException e) {
+		         throw new ArrayIndexOutOfBoundsException("Submatrix indices");
+		      }
+		      
+		      
+		      
+		      
+		      
+		
+		
+		
 	}
 }

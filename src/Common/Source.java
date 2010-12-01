@@ -193,6 +193,7 @@ public class Source implements Runnable {
 						}
 					}
 				}
+				
 				while (! buffer_.isEmpty())
 				{				
 					Buffer buf = buffer_.get(0);
@@ -264,6 +265,7 @@ public class Source implements Runnable {
 					}
 					return;
 				}
+				
 				buffer_.add(new Buffer(buf, ret));
 				
 				synchronized(this)

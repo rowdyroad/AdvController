@@ -26,8 +26,10 @@ public class Summator implements Catcher{
 	private class FrameWaiter
 	{
 		long time;
-		Vector<Long> offset = new Vector<Long>();
-		
+		Vector<Long> offset = new Vector<Long>();		
+		long offset_begin;
+		long  offset_end;
+		long maxed_time;
 		double max_offset = 0;
 		int offset_index = 0;
 		int index = 1;
@@ -38,24 +40,19 @@ public class Summator implements Catcher{
 			id=++fw_id_;
 			this.fp = fp;
 			this.time = time;
-			
-			long off = time % settings_.WindowSize();
-			for (int i = 2; i >  0; --i)
-			{
-				long  x = off - 4096 * i;
-				x = (x < 0 ) ? settings_.WindowSize() + x : x;
-				offset.add(x);
-			}
-			offset.add(off);
-			for (int  i = 1; i < 3; ++i)
-			{
-				long  x = off + 4096 * i;
-				x = (x  >= settings_.WindowSize()) ? x - settings_.WindowSize() : x; 
-				offset.add(x);
-			}
-			
+			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 4;
+			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 4;
 			//Utils.Dbg("%d, offsets:%d  %d (%d) %d  %d",off, this.offset.get(0),this.offset.get(1),this.offset.get(2),this.offset.get(3),this.offset.get(4));
 		}
+		
+		public void Next(long time)
+		{
+			++index;
+			max_offset  = 0;
+			this.offset_begin = time  +settings_.WindowSize()  - settings_.WindowSize() / 4;
+			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 4;
+		}
+		
 	}
 	static private int fw_id_ = 0;
 
@@ -78,10 +75,9 @@ public class Summator implements Catcher{
 	}
 		
 	@Override
-	public boolean OnReceived(Vector<double[]> mfcc, long timeoffset) 
+	public boolean OnReceived(double[][] mfcc, long timeoffset) 
 	{
 		FrameWaiter limit = null;		
-		Long offset = new Long( time_ % settings_.WindowSize());
 		for (FingerPrintWrapper fpw: fingerPrints_)
 		{
 			double x = dtw_.measure(fpw.fp.Get(0), mfcc);
@@ -95,14 +91,17 @@ public class Summator implements Catcher{
 					{
 						fpw.maxed = true;
 						FrameWaiter fw = new FrameWaiter(fpw.fp, time_);
-						//Utils.Dbg("%d| ADD: %s[%d]  %d / %f",time_, fpw.fp.Id(),fw.id, offset, fpw.last);
+				//		Utils.Dbg("%d| ADD: %s[%d]  %d / %f",time_, fpw.fp.Id(),fw.id, offset, fpw.last);
 						if (limit == null)
 						{
 							limit = fw;
 						}
+						fpw.maxed = false;
+						fpw.last = 0;
 						waiters_.add(fw);						
 					}
-				}else
+				}
+				else
 				{
 					fpw.maxed = false;
 				}
@@ -112,38 +111,39 @@ public class Summator implements Catcher{
 		
 		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
 		
+		Utils.Dbg("%d",waiters_.size());
 		for (FrameWaiter fw: waiters_)
 		{
 			if (fw == limit) 
 			{
-				//Utils.Dbg("%d| IGNORE: :%s[%d]",time_, fw.fp.Id(), fw.id);
 				break;
 			}
 			
 			if (time_ > fw.time  + fw.fp.Time()) 
 			{				
-			//	Utils.Dbg("%d| TIME: %s[%d]",time_, fw.fp.Id(), fw.id);
 				removes.add(fw);
 				continue;
 			}
 			
-			if (fw.offset_index < fw.offset.size() && fw.offset.get(fw.offset_index).equals(offset))
+			if (time_ >= fw.offset_begin && time_<=fw.offset_end)
 			{	
 				double x = dtw_.measure(fw.fp.Get(fw.index), mfcc);
-				//Utils.Dbg("%d | %s[%d]  offset_index:%d offset:%d /%f", time_, fw.fp.Id(), fw.id,fw.offset_index, fw.offset.get(fw.offset_index), x);
-				fw.max_offset = Math.max(fw.max_offset, x);
-				++fw.offset_index;
+				//Utils.Dbg("%d | %s[%d]  offset_begin:%d offset_end:%d /%f", time_, fw.fp.Id(), fw.id,fw.offset_begin, fw.offset_end, x);
+				if (x > fw.max_offset)
+				{
+					fw.maxed_time  = time_;
+					fw.max_offset = x;
+				}	
 			}
 			else
 			{
-				if (fw.offset_index == fw.offset.size())
+				if (time_ > fw.offset_end)
 				{
-					
-					//Utils.Dbg("max:%f",fw.max_offset);
+					//Utils.Dbg("%d |  MATCH: %s[%d] index:%d max:%f",time_, fw.fp.Id(), fw.id, fw.index, fw.max_offset);		
 					if (fw.max_offset > 0.1)
-					{
-						fw.index++;
-						if ((double)fw.index / fw.fp.Frames() > 0.6)
+					{		
+						fw.Next(fw.maxed_time);
+						if ((double)fw.index / fw.fp.Frames() > 0.8)
 						{
 							if (resulter_.OnFound(fw.fp.Id(), System.currentTimeMillis() / 1000))
 							{
@@ -152,12 +152,10 @@ public class Summator implements Catcher{
 								break;
 							}
 						}
-						fw.offset_index  =  0;
-						fw.max_offset = 0;
 					}
 					else
 					{
-							//Utils.Dbg("%d| NOTMATCH: %s[%d]  index:%d/%f", time_, fw.fp.Id(), fw.id,fw.index, x);
+						//Utils.Dbg("%d| NOTMATCH: %s[%d]  index:%d/%f", time_, fw.fp.Id(), fw.id,fw.index, fw.max_offset);
 						removes.add(fw);
 					}
 				}
@@ -165,22 +163,6 @@ public class Summator implements Catcher{
 		}
 		
 		waiters_.removeAll(removes);
-		
-		
-		Collections.sort(waiters_, new Comparator<FrameWaiter>(){
-
-			@Override
-			public int compare(FrameWaiter arg0, FrameWaiter arg1) {
-				// TODO Auto-generated method stub
-				return - new Integer(arg0.index).compareTo(new Integer(arg1.index));
-			}});
-		
-		if (! waiters_.isEmpty())
-		{
-			FrameWaiter fw = waiters_.getFirst();
-			//Utils.Dbg("%d| MATCH: %s[%d]  index:%d/%f",time_, fw.fp.Id(),fw.id, fw.index, fw.last);
-		}
-		
 		time_+=timeoffset;
 		
 		/*
