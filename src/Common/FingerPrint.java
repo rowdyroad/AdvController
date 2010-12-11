@@ -1,35 +1,20 @@
 package Common;
 
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.Vector;
-import java.util.Collections;
-
-import com.sun.org.apache.xpath.internal.Arg;
 
 public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 
 	private static final long serialVersionUID = 8559602924873961446L;
 	
 	private String id_;
-	private long time_;
 	private ArrayList<double[][]> mfcc_ = new ArrayList<double[][]>();
 	private ArrayList<Double> means_ = new ArrayList<Double>();
 	private ArrayList<Long> times_ = new ArrayList<Long>();
@@ -138,6 +123,14 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		return str;
 	}
 	
+	static public FingerPrint Deserialize(File  file) throws IOException, ClassNotFoundException
+	{
+		FileInputStream fis = new FileInputStream(file);
+		ObjectInputStream oin = new ObjectInputStream(fis);
+		FingerPrint fp =  (FingerPrint)oin.readObject();
+		return fp;
+		
+	}
 	static public FingerPrint Deserialize(String filename) throws IOException, ClassNotFoundException
 	{
 		FileInputStream fis = new FileInputStream(filename);

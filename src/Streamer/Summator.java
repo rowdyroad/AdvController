@@ -1,10 +1,7 @@
 package Streamer;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Utils;
@@ -26,12 +23,10 @@ public class Summator implements Catcher{
 	private class FrameWaiter
 	{
 		long time;
-		Vector<Long> offset = new Vector<Long>();		
 		long offset_begin;
 		long  offset_end;
 		long maxed_time;
 		double max_offset = 0;
-		int offset_index = 0;
 		int index = 1;
 		int id;
 		FingerPrint fp;
@@ -68,7 +63,7 @@ public class Summator implements Catcher{
 		settings_ = settings;
 		resulter_ = resulter;
 	}
-	
+
 	public void AddFingerPrint(FingerPrint fp)
 	{
 		fingerPrints_.add(new FingerPrintWrapper(fp));
@@ -111,7 +106,6 @@ public class Summator implements Catcher{
 		
 		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
 		
-		Utils.Dbg("%d",waiters_.size());
 		for (FrameWaiter fw: waiters_)
 		{
 			if (fw == limit) 
@@ -164,52 +158,6 @@ public class Summator implements Catcher{
 		
 		waiters_.removeAll(removes);
 		time_+=timeoffset;
-		
-		/*
-		mfcc_.add(mfcc);
-		time_+=timeoffset;
-		
-		if (time_ < settings_.WindowSize() / 4) return true;
-		
-		
-		for (FingerPrint fp: fingerPrints_)
-		{
-			double x = dtw_.measure(fp.Get(0), mfcc_);
-			if ( x > 0.1 )
-			{
-				FrameWaiter fw = new FrameWaiter(fp, time_);
-				if (limit == null)
-				{
-					limit = fw;
-				}
-				Utils.Dbg("%d add to waiter:%s",time_, fp.Id());
-				waiters_.add(fw);				
-			}
-		}
-		
-		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
-		for (FrameWaiter fw: waiters_)
-		{
-			if (fw == limit) break;
-			double x = dtw_.measure(fw.fp.Get(fw.index), mfcc_);
-			if (x > 0.1)
-			{
-				fw.index++;
-				fw.totals++;
-				Utils.Dbg("%d/%d  compared:%s  index:%d totals:%d", time_, time_ - fw.time, fw.fp.Id(), fw.index,fw.totals);
-				continue;
-			}
-			
-			if (time_ > fw.time + fw.fp.Frames() * settings_.WindowSize()/2)
-			{
-				Utils.Dbg("%s add to removed", fw.fp.Id());
-				removes.add(fw);
-			}
-		}
-		
-		
-			
-		mfcc_.remove(0);*/
 		return true;
 	}
 

@@ -1,10 +1,6 @@
 package util;
 
-import java.util.Vector;
 import java.io.IOException;
-
-import Common.Utils;
-
 import util.math.Matrix;
 
 /**
@@ -50,7 +46,6 @@ public class MFCC
   protected boolean useFirstCoefficient;
 
   //implementation details
-  private double[] inputData;
   private double[] buffer;
   private Matrix dctMatrix;
   private Matrix melFilterBanks;
@@ -113,7 +108,6 @@ public class MFCC
    * @throws IllegalArgumentException raised if method contract is violated
    */
   
-  private Matrix xM;
   public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, double minFreq, double maxFreq, int numberFilters) throws IllegalArgumentException
   {
     //check for correct window size
@@ -161,7 +155,6 @@ public class MFCC
     this.numberFilters = numberFilters;
 
     //create buffers
-    inputData = new double[windowSize];
     buffer = new double[windowSize];
     fftSize = windowSize / 2;
    

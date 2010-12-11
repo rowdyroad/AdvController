@@ -1,10 +1,5 @@
 package Common;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Vector;
 
 public class Frequencier implements Source.AudioReceiver {
 
@@ -51,41 +46,6 @@ public class Frequencier implements Source.AudioReceiver {
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			
 		}
-
-		
-		
-		
-		
-		/*List<Frequency> freqs = new LinkedList<Frequency>();	
-		double[] data = new double[4096];
-		int total = 0;
-		while (total <db.length)
-		{
-			System.arraycopy(cache, 0, data, 0, 3072);
-			System.arraycopy(db, total, data, 3072,  1024);
-			System.arraycopy(data, 1024, cache, 0, 3072);		
-			fft_.Transform(data);
-			convertToFrequency(data, 0, freqs);
-			total+=1024;
-			if (total % 4096 == 0)
-			{
-				if (! catcher_.OnReceived(freqs, 4096))
-				{
-					return;	
-				}
-				freqs = new LinkedList<Frequency>();	
-			}
-		}*/
-		
-/*		for(Frequency f:freqs)
-		{
-			Utils.Dbg("%d - %f",f.frequency, f.level);
-		}
-		Utils.Dbg("");*/
-		
-		
-
 	}	
 }

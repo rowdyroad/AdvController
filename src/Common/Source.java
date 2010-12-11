@@ -71,9 +71,6 @@ public class Source implements Runnable {
 	private int readChunkSize_;
 	private byte[] cache_;
 	private int cache_len_ = 0;
-	private int overlapped_length_ = 0;
-	private byte[] overlapped_cache_;
-	private int overlapped_cache_len_ = 0;
 	private Settings settings_;
 	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
 
@@ -96,13 +93,8 @@ public class Source implements Runnable {
 		stream_ = stream;
 		frameSize_ = settings.Channels() * settings.SampleSize();
 		readChunkSize_ =  settings.WindowSize() * frameSize_;
-		overlapped_length_ = settings.OverlappedLength() * frameSize_;
 		cache_ = new byte[readChunkSize_];
-		overlapped_cache_  = new byte[readChunkSize_];
 		settings_ = settings;
-		overlapped_cache_len_ = readChunkSize_ - overlapped_length_;
-		thread_ = new Thread(this);
-		thread_.start();
 	}
 
 
@@ -123,20 +115,11 @@ public class Source implements Runnable {
 		return (double)buf.getShort() / Short.MAX_VALUE;
 	} 
 
-
-	int totals = 0;
-	int counts = 0;
-	byte[] x = new byte[128];
-
 	private void process(byte[] buf, int len)
 	{
-		
 		double[] left = new double[settings_.WindowSize()];
 		double[] right = new double[settings_.WindowSize()];
-		int j = 0;
-		double maxLeft =  Double.NEGATIVE_INFINITY;
-		double maxRight = Double.NEGATIVE_INFINITY;
-		
+		int j = 0;	
 		for (int i = 0; i < len - frameSize_; i+=frameSize_, j++)
 		{
 			if (settings_.Channels() == 2)
@@ -178,6 +161,15 @@ public class Source implements Runnable {
 	int readed = 0;
 	public  void Process()
 	{
+		if (receivers_.isEmpty()) 
+		{
+			Utils.Dbg("There aren't any receivers has been registered");
+			return;
+		}
+		
+		thread_ = new Thread(this);
+		thread_.start();
+
 		while (true)
 		{
 				synchronized(this)
@@ -187,7 +179,6 @@ public class Source implements Runnable {
 						try {
 							wait();
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 							return;
 						}
@@ -245,11 +236,9 @@ public class Source implements Runnable {
 		return stream_;
 	}
 
-
-
 	@Override
-	public  void  run() {
-		// TODO Auto-generated method stub
+	public  void  run() 
+	{
 		while (true)
 		{
 			byte[] buf = new byte[readChunkSize_];
@@ -266,14 +255,19 @@ public class Source implements Runnable {
 					return;
 				}
 				
-				buffer_.add(new Buffer(buf, ret));
-				
+				byte max = 0;
+				for (int i = 0; i < ret; ++i)
+				{
+					max = (byte) Math.max(max, buf[i]);
+				}
+				buffer_.add(new Buffer(buf, ret));				
 				synchronized(this)
 				{
 					notify();
 				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+			} 
+			catch (IOException e) 
+			{
 				buffer_.add(null);
 				synchronized(this)
 				{

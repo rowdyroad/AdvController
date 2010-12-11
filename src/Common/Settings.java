@@ -2,7 +2,6 @@ package Common;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioFormat.Encoding;
-import javax.sound.sampled.AudioInputStream;
 
 public class Settings 
 {

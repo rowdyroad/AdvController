@@ -23,9 +23,15 @@ public class Capturer implements Frequencier.Catcher
 	{
 		AudioInputStream stream = AudioSystem.getAudioInputStream(new File(filename));
 		settings_ = new Settings(stream.getFormat());
-		
 		source_ = new Source(stream, settings_);
-		source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize()));																					
+		if (Config.Instance().Channel() == "right")
+		{
+			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize()));
+		}
+		else
+		{
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize()));		
+		}
 		fp_ = new FingerPrint(id);		
 		Utils.Dbg("FrameLength:%d",stream.getFrameLength());
 	}
