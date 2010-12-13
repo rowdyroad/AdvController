@@ -24,17 +24,16 @@ import Common.Utils;
 
 public class Streamer
 {
-	
-
-	
-	private Map<String, LinkedList<FingerPrint>>  fingerPrints_ = new TreeMap<String, LinkedList<FingerPrint>>();	
 	private Source source_;
 	private Settings settings_;
+	private Loader loader_;
 	
 	public Streamer() throws Exception
 	{
 		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);
 		settings_ = new Settings(format);
+		loader_ = new Loader(Config.Instance().PromosPath());
+		
 		try
 		{	
 			InputStream stream = null;
@@ -64,57 +63,30 @@ public class Streamer
 		}
 	}
 	
-	public void AddFingerPrint(String key, FingerPrint fp)
-	{
-		if (!fingerPrints_.containsKey(key))
-		{
-			fingerPrints_.put(key, new LinkedList<FingerPrint>());
-		}
-		fingerPrints_.get(key).add(fp);
-	}
-	
-	public int Count()
-	{
-		int size = 0;
-		
-		for (Entry<String, LinkedList<FingerPrint>> kvp: fingerPrints_.entrySet())
-		{
-			size+=kvp.getValue().size();
-		}
-		return size;
-	}
-	
 	public void Process()
 	{
+		
+		
 		String left_key = Common.Config.Instance().GetProperty("left_key", "");
 		String right_key = Common.Config.Instance().GetProperty("right_key", "");
-		
-		
-		LinkedList<FingerPrint> fingerPrints = fingerPrints_.get(left_key);
-		if (fingerPrints != null)
+		if (! left_key.isEmpty())
 		{
-			Utils.Dbg("Process left channel [%s]", left_key);
-			Summator sm = new Summator(settings_,new ResultSubmiter(left_key));
-			for (FingerPrint fp: fingerPrints)
-			{
-				sm.AddFingerPrint(fp);
-			}
+			Utils.Dbg("Add left channel [%s]", left_key);
+			Summator sm = new Summator(settings_,new ResultSubmiter(left_key));		
+			loader_.AddProcessor(left_key, sm);
 			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,4096));
 		}
 		
-		 fingerPrints = fingerPrints_.get(right_key);
-		if (fingerPrints != null)
+		if (! right_key.isEmpty())
 		{
-			Utils.Dbg("Process right channel [%s]", right_key);
+			Utils.Dbg("Add right channel [%s]", right_key);
 			Summator sm = new Summator(settings_,new ResultSubmiter(right_key));
-			for (FingerPrint fp: fingerPrints)
-			{
-				sm.AddFingerPrint(fp);
-			}
+			loader_.AddProcessor(right_key, sm);
 			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(sm, settings_,4096));
 		}		
 		
-		Utils.Dbg("listening...");		
+		Utils.Dbg("Listening...");		
+		loader_.Process();
 		source_.Process();
 	}
 }

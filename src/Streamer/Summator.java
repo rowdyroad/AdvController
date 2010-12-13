@@ -1,13 +1,16 @@
 package Streamer;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Utils;
 import Common.Frequencier.Catcher;
 
-public class Summator implements Catcher{
+public class Summator implements Catcher, Loader.Processor {
 	
 	private class FingerPrintWrapper
 	{
@@ -17,6 +20,11 @@ public class Summator implements Catcher{
 		public FingerPrintWrapper(FingerPrint fp)
 		{
 			this.fp = fp;
+		}
+		@Override
+		public boolean equals(Object obj)
+		{
+			return fp.equals(((FingerPrintWrapper)obj).fp);
 		}
 	}
 	
@@ -55,7 +63,7 @@ public class Summator implements Catcher{
 	private Settings settings_ = null;
 	private long time_  =  0; 
 	private LinkedList<FrameWaiter> waiters_ = new LinkedList<FrameWaiter>();	
-	private List<FingerPrintWrapper> fingerPrints_ = new LinkedList<FingerPrintWrapper>();
+	private List<FingerPrintWrapper> fingerPrints_ = new CopyOnWriteArrayList<FingerPrintWrapper>();
 	private Resulter resulter_;
 	
 	public Summator(Settings settings, Resulter resulter)
@@ -64,11 +72,18 @@ public class Summator implements Catcher{
 		resulter_ = resulter;
 	}
 
+	@Override
 	public void AddFingerPrint(FingerPrint fp)
 	{
 		fingerPrints_.add(new FingerPrintWrapper(fp));
 	}
-		
+
+	@Override
+	public void RemoveFingerPrint(FingerPrint fp) 
+	{
+		fingerPrints_.remove(new FingerPrintWrapper(fp));
+	} 
+	
 	@Override
 	public boolean OnReceived(double[][] mfcc, long timeoffset) 
 	{
@@ -165,7 +180,8 @@ public class Summator implements Catcher{
 	public void OnError() {
 		// TODO Auto-generated method stub
 
-	} 
+	}
+
 
 
 
