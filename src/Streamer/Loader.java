@@ -78,7 +78,7 @@ public class Loader implements Runnable {
 				data_.put(dir.getName(),fps);
 			}
 				
-			Utils.Dbg("Checking %s...",dir.getName());
+	//		Utils.Dbg("Checking %s...",dir.getName());
 
 			File[] files = dir.listFiles();
 			removeOld(dir.getName(), fps, files);
@@ -88,7 +88,7 @@ public class Loader implements Runnable {
 					FingerPrint fp = fps.get(file.getName());
 					if (fp == null)
 					{
-						Utils.Dbg("\tAdd %s",file.getName());
+						Utils.Dbg("Loader Add %s",file.getName());
 						FingerPrint nfp = FingerPrint.Deserialize(file);
 						fps.put(file.getName(), nfp);
 
