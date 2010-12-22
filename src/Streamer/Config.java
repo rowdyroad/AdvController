@@ -15,11 +15,15 @@ public class Config {
 		return instance_;
 	}
 	
-	private String external_program_ = new String();;
+	private String external_program_ = new String();
 	private double fingerprint_equivalency_ = 0.6 ;
 	private String promos_path_;
 	private String source_;
 	private int sample_rate_ = 44100;
+	private int left_min_frequency_ = 20;
+	private int left_max_frequency_ = 20000;
+	private int right_min_frequency_ = 20;
+	private int right_max_frequency_ = 20000;
 	private Config()
 	{
 		try
@@ -30,6 +34,10 @@ public class Config {
 			promos_path_ = Common.Config.Instance().GetProperty("storage", ".");
 			promos_path_ = (promos_path_.isEmpty()) ? "./" : Utils.CompletePath(promos_path_);
 			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("equivalency", Double.toString(fingerprint_equivalency_)));
+			left_min_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("left_min_frequency", Integer.toString(left_min_frequency_)));
+			left_max_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("left_max_frequency", Integer.toString(left_max_frequency_)));
+			right_min_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("right_min_frequency", Integer.toString(right_min_frequency_)));
+			right_max_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("right_max_frequency", Integer.toString(right_max_frequency_)));
 		} 
 		catch (Exception e)
 		{
@@ -37,6 +45,25 @@ public class Config {
 		}
 	}
 	
+	public int LeftMinFrequency()
+	{
+		return left_min_frequency_;
+	}
+	
+	public int LeftMaxFrequency()
+	{
+		return left_max_frequency_;
+	}
+
+	public int RightMinFrequency()
+	{
+		return left_min_frequency_;
+	}
+	
+	public int RightMaxFrequency()
+	{
+		return left_max_frequency_;
+	}
 	
 	public int SampleRate()
 	{

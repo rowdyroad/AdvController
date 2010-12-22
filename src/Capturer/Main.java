@@ -4,37 +4,53 @@ import java.io.IOException;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import Common.Args;
 import Common.Source;
 import Common.Utils;
 
 public class Main {
 
-	public static void main (String args [])  {
+	private static void usage()
+	{
+		Utils.Dbg("Usage: %s\n\t-c <config_file>\n\t-f <min_frequency>\n\t-F <max_frequency> \n\t-p <wav_file>,<result_file>,<promo_id>,...", Main.class.getName());
+		System.exit(1);		
+	}
+	
+	public static void main (String a [])  {
 
-		if (args.length < 3)
+		if (a.length  == 0)
 		{
-			Utils.Dbg("Usage: %s [<config_file>] <wav_file> <result_file> <promo_id>", Main.class.getName());
-			System.exit(1);
+			usage();
 		}
-
-		int begin = 0;
-		if (args.length %  3 != 0)
+		
+		Args args = new Args(a);
+		int min_freq = args.GetInt("f",-1);
+		int max_freq = args.GetInt("F",-1);
+		String p = args.Get("p","");
+		
+		if (min_freq == -1 || max_freq == -1 || p.isEmpty())
 		{
-			begin = 1;
-			Common.Config.Filename = args[0];
+			usage();
+		}
+		
+		String[]  promos = p.split(",");
+		if (promos.length % 3 != 0)
+		{
+			usage();
 		}
 		
 		try
 		{
-			Utils.Dbg("Files to convert: %d", args.length / 3);
-			for (int i = begin; i < args.length; i+=3)
+			Utils.Dbg("Min Frequency:%d\nMaxFrequency:%d",min_freq,max_freq);
+			Utils.Dbg("Files to convert: %d", promos.length / 3);
+			for (int i = 0; i < promos.length; i+=3)
 			{
 				long time = System.currentTimeMillis();
-				String wav_file = args[i];
-				String result_file = args[i+1];
-				String promo_id = args[i+2];
+				String wav_file = promos[i];
+				String result_file = promos[i+1];
+				String promo_id = promos[i+2];
 				Utils.Dbg("Filename: %s\nResult file:%s\nPromoID: %s", wav_file, result_file, promo_id);	
-				Capturer capt = new Capturer(wav_file,  promo_id);
+				Capturer capt = new Capturer(wav_file,  promo_id, min_freq, max_freq);
 				capt.Process().Serialize(result_file);
 				Utils.Dbg("Time to work: %d ms", System.currentTimeMillis() - time);
 			}

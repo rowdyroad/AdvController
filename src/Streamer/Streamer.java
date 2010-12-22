@@ -65,8 +65,6 @@ public class Streamer
 	
 	public void Process()
 	{
-		
-		
 		String left_key = Common.Config.Instance().GetProperty("left_key", "");
 		String right_key = Common.Config.Instance().GetProperty("right_key", "");
 		if (! left_key.isEmpty())
@@ -74,7 +72,7 @@ public class Streamer
 			Utils.Dbg("Add left channel [%s]", left_key);
 			Summator sm = new Summator(settings_,new ResultSubmiter(left_key));		
 			loader_.AddProcessor(left_key, sm);
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,4096));
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,4096,Config.Instance().LeftMinFrequency(),Config.Instance().LeftMaxFrequency()));
 		}
 		
 		if (! right_key.isEmpty())
@@ -82,7 +80,7 @@ public class Streamer
 			Utils.Dbg("Add right channel [%s]", right_key);
 			Summator sm = new Summator(settings_,new ResultSubmiter(right_key));
 			loader_.AddProcessor(right_key, sm);
-			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(sm, settings_,4096));
+			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(sm, settings_,4096,Config.Instance().RightMinFrequency(),Config.Instance().RightMaxFrequency()));
 		}		
 		
 		Utils.Dbg("Listening...");		

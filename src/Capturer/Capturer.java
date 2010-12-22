@@ -19,18 +19,18 @@ public class Capturer implements Frequencier.Catcher
 	FingerPrint fp_;
 	private Settings settings_;
 	
-	public Capturer(String filename, String id) throws Exception
+	public Capturer(String filename, String id, int min_frequency, int max_frequency) throws Exception
 	{
 		AudioInputStream stream = AudioSystem.getAudioInputStream(new File(filename));
 		settings_ = new Settings(stream.getFormat());
 		source_ = new Source(stream, settings_);
 		if (Config.Instance().Channel() == "right")
 		{
-			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize()));
+			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(), min_frequency, max_frequency));
 		}
 		else
 		{
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize()));		
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(),min_frequency, max_frequency));		
 		}
 		fp_ = new FingerPrint(id);		
 		Utils.Dbg("FrameLength:%d",stream.getFrameLength());

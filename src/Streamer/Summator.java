@@ -94,7 +94,7 @@ public class Summator implements Catcher, Loader.Processor {
 			if ( x > 0.1 )
 			{
 				double diff = x - fpw.last;
-				Utils.Dbg("%d| %s add to waiter",time_ , fpw.fp.Id());
+				//Utils.Dbg("%d| %s add to waiter",time_ , fpw.fp.Id());
 				if (diff  <  0)
 				{
 					if (!fpw.maxed)
@@ -137,7 +137,7 @@ public class Summator implements Catcher, Loader.Processor {
 			if (time_ >= fw.offset_begin && time_<=fw.offset_end)
 			{	
 				double x = dtw_.measure(fw.fp.Get(fw.index), mfcc);
-				Utils.Dbg("%d | %s[%d]  offset_begin:%d offset_end:%d /%f", time_, fw.fp.Id(), fw.id,fw.offset_begin, fw.offset_end, x);
+				//Utils.Dbg("%d | %s[%d]  offset_begin:%d offset_end:%d /%f", time_, fw.fp.Id(), fw.id,fw.offset_begin, fw.offset_end, x);
 				if (x > fw.max_offset)
 				{
 					fw.maxed_time  = time_;
@@ -148,7 +148,7 @@ public class Summator implements Catcher, Loader.Processor {
 			{
 				if (time_ > fw.offset_end)
 				{
-					Utils.Dbg("%d |  %s[%d] MATCH:  index:%d max:%f",time_, fw.fp.Id(), fw.id, fw.index, fw.max_offset);		
+					//Utils.Dbg("%d |  %s[%d] MATCH:  index:%d max:%f",time_, fw.fp.Id(), fw.id, fw.index, fw.max_offset);		
 					if (fw.max_offset > 0.1)
 					{		
 						fw.Next(fw.maxed_time);
@@ -164,7 +164,7 @@ public class Summator implements Catcher, Loader.Processor {
 					}
 					else
 					{
-						Utils.Dbg("%d| %s[%d] NOTMATCH:  index:%d/%f", time_, fw.fp.Id(), fw.id,fw.index, fw.max_offset);
+						//Utils.Dbg("%d| %s[%d] NOTMATCH:  index:%d/%f", time_, fw.fp.Id(), fw.id,fw.index, fw.max_offset);
 						removes.add(fw);
 					}
 				}

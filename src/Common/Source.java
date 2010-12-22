@@ -73,7 +73,11 @@ public class Source implements Runnable {
 	private int cache_len_ = 0;
 	private Settings settings_;
 	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
-
+	
+	public Settings GetSettings()
+	{
+		return settings_;
+	}
 	private class Buffer
 	{
 		byte[] buffer;
@@ -88,7 +92,7 @@ public class Source implements Runnable {
 	private List<Buffer> buffer_ = Collections.synchronizedList(new LinkedList<Buffer>());
 	private Thread thread_;
 
-	public Source(InputStream stream, Settings settings) throws Exception
+	public Source(InputStream stream, Settings settings)
 	{
 		stream_ = stream;
 		frameSize_ = settings.Channels() * settings.SampleSize();
