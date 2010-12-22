@@ -1,13 +1,11 @@
 package Streamer;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import Common.FingerPrint;
 import Common.Settings;
-import Common.Utils;
 import Common.Frequencier.Catcher;
 
 public class Summator implements Catcher, Loader.Processor {
@@ -36,11 +34,11 @@ public class Summator implements Catcher, Loader.Processor {
 		long maxed_time;
 		double max_offset = 0;
 		int index = 1;
-		int id;
+		//int id;
 		FingerPrint fp;
 		public FrameWaiter(FingerPrint fp, long time)
 		{
-			id=++fw_id_;
+			//id=++fw_id_;
 			this.fp = fp;
 			this.time = time;
 			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 4;
@@ -57,7 +55,7 @@ public class Summator implements Catcher, Loader.Processor {
 		}
 		
 	}
-	static private int fw_id_ = 0;
+	//static private int fw_id_ = 0;
 
 	private DTW dtw_ = new DTW();
 	private Settings settings_ = null;

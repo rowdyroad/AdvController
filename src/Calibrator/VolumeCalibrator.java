@@ -1,7 +1,5 @@
 package Calibrator;
 
-import java.io.IOException;
-
 import Common.Source;
 import Common.Utils;
 

@@ -1,14 +1,10 @@
 package Calibrator;
 
-import java.io.InputStream;
-
 import javax.sound.sampled.AudioFormat;
-
 import Streamer.Config;
 import Common.Args;
 import Common.Settings;
 import Common.Source;
-import Common.Utils;
 import Common.Source.Channel;
 
 public class Main {
@@ -30,7 +26,7 @@ public class Main {
 																: new FrequencyCalibrator(source);
 																
 		source.RegisterAudioReceiver((arguments.Get("c","left").equals("left")) 
-																				? Channel.RIGHT_CHANNEL 
+																				? Channel.LEFT_CHANNEL 
 																				: Channel.RIGHT_CHANNEL, calibrator);
 		
 		calibrator.Process();
