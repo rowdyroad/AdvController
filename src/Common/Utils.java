@@ -1,4 +1,6 @@
 package Common;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -47,9 +49,12 @@ public class Utils
 			return String.format("%02d:%02d:%02d", d.getHours(), d.getMinutes(), d.getSeconds());
 		}
 		
+		static private 			DateFormat date_format_  = new SimpleDateFormat("[ dd/MM/yyyy HH:mm:ss.SSS ] ");
+
+		
 		static public void Dbg(String format, Object... args)
 		{
-			System.out.printf(format+"\n",args);
+			System.out.printf(date_format_.format(new Date())+" "+format+"\n",args);
 		}
 		
 		

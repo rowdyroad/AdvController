@@ -88,9 +88,10 @@ public class Loader implements Runnable {
 					FingerPrint fp = fps.get(file.getName());
 					if (fp == null)
 					{
-						Utils.Dbg("Loader Add %s",file.getName());
+						Utils.Dbg("Loading  %s..",file.getName());
 						FingerPrint nfp = FingerPrint.Deserialize(file);
 						fps.put(file.getName(), nfp);
+						Utils.Dbg("Loaded %s\n",nfp.Id());
 
 						LinkedList<Processor> ps = processors_.get(dir.getName());
 						if (ps != null)

@@ -1,6 +1,8 @@
 package Streamer;
 
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
 import javax.sound.sampled.AudioFormat;
@@ -31,7 +33,7 @@ public class Streamer
 		try
 		{	
 			InputStream stream = null;
-			if (Config.Instance().Source() == "soundcard")
+			if (Config.Instance().Source().equals("soundcard"))
 			{
 				DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 				TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
@@ -40,9 +42,29 @@ public class Streamer
 				stream = new AudioInputStream(line);
 			}
 			else
+			if (Config.Instance().Source().startsWith("file://"))
+			{
+				File file = new File(Config.Instance().Source().substring(7));
+				if (! file.exists())
+				{
+					Utils.Dbg("Source file not found");
+				}
+				else
+				{
+					stream = AudioSystem.getAudioInputStream(file);
+				}
+			}
+			else
+			if (Config.Instance().Source().equals("stdin"))
 			{
 				stream = System.in;
 			}
+			else
+			if (Config.Instance().Source().startsWith("program://"))
+			{
+					Process p = Runtime.getRuntime().exec(Config.Instance().Source().substring(10));
+					stream = p.getInputStream();
+			};
 			
 			if (stream ==null)
 			{
@@ -80,5 +102,6 @@ public class Streamer
 		Utils.Dbg("Listening...");		
 		loader_.Process();
 		source_.Process();
+		
 	}
 }

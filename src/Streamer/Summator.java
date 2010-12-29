@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Frequencier.Catcher;
+import Common.Utils;
 
 public class Summator implements Catcher, Loader.Processor {
 	
@@ -33,17 +34,27 @@ public class Summator implements Catcher, Loader.Processor {
 		long  offset_end;
 		long maxed_time;
 		double max_offset = 0;
-		int index = 1;
+		int index;
 		//int id;
 		FingerPrint fp;
-		public FrameWaiter(FingerPrint fp, long time)
+		public FrameWaiter(FingerPrint fp, long time, int index)
 		{
 			//id=++fw_id_;
 			this.fp = fp;
 			this.time = time;
 			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 4;
 			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 4;
+			this.index = index;
 			//Utils.Dbg("%d, offsets:%d  %d (%d) %d  %d",off, this.offset.get(0),this.offset.get(1),this.offset.get(2),this.offset.get(3),this.offset.get(4));
+		}
+		
+		public FrameWaiter(FingerPrint fp, long time)
+		{
+			this.fp = fp;
+			this.time = time;
+			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 4;
+			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 4;
+			this.index = 1;
 		}
 		
 		public void Next(long time)
@@ -85,37 +96,39 @@ public class Summator implements Catcher, Loader.Processor {
 	@Override
 	public boolean OnReceived(double[][] mfcc, long timeoffset) 
 	{
-		FrameWaiter limit = null;		
-		for (FingerPrintWrapper fpw: fingerPrints_)
-		{
-			double x = dtw_.measure(fpw.fp.Get(0), mfcc);
-			if ( x > 0.1 )
+		FrameWaiter limit = null;
+		
+		   Utils.Dbg("FingerPrints: %d Waiters:%d",fingerPrints_.size(), waiters_.size());
+			for (FingerPrintWrapper fpw: fingerPrints_)
 			{
-				double diff = x - fpw.last;
-				//Utils.Dbg("%d| %s add to waiter",time_ , fpw.fp.Id());
-				if (diff  <  0)
+				double x = dtw_.measure(fpw.fp.Get(0), mfcc);
+				if ( x > 0.1 )
 				{
-					if (!fpw.maxed)
+					double diff = x - fpw.last;
+					//Utils.Dbg("%d| %s add to waiter",time_ , fpw.fp.Id());
+					if (diff  <  0)
 					{
-						fpw.maxed = true;
-						FrameWaiter fw = new FrameWaiter(fpw.fp, time_);
-					//	Utils.Dbg("%d| ADD: %s[%d]  %d / %f",time_, fpw.fp.Id(),fw.id, offset, fpw.last);
-						if (limit == null)
+						if (!fpw.maxed)
 						{
-							limit = fw;
+							fpw.maxed = true;
+							FrameWaiter fw = new FrameWaiter(fpw.fp, time_, 1);
+							//Utils.Dbg("%d| ADD: %s[%d]  %d / %f",time_, fpw.fp.Id(),0, 0, fpw.last);
+							if (limit == null)
+							{
+								limit = fw;
+							}
+							fpw.maxed = false;
+							fpw.last = 0;
+							waiters_.add(fw);						
 						}
-						fpw.maxed = false;
-						fpw.last = 0;
-						waiters_.add(fw);						
 					}
+					else
+					{
+						fpw.maxed = false;
+					}
+					fpw.last = x;
 				}
-				else
-				{
-					fpw.maxed = false;
-				}
-				fpw.last = x;
 			}
-		}
 		
 		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
 		
@@ -135,7 +148,7 @@ public class Summator implements Catcher, Loader.Processor {
 			if (time_ >= fw.offset_begin && time_<=fw.offset_end)
 			{	
 				double x = dtw_.measure(fw.fp.Get(fw.index), mfcc);
-				//Utils.Dbg("%d | %s[%d]  offset_begin:%d offset_end:%d /%f", time_, fw.fp.Id(), fw.id,fw.offset_begin, fw.offset_end, x);
+				//Utils.Dbg("%d | %s[%d]  offset_begin:%d offset_end:%d /%f", time_, fw.fp.Id(), 0,fw.offset_begin, fw.offset_end, x);
 				if (x > fw.max_offset)
 				{
 					fw.maxed_time  = time_;
@@ -146,7 +159,7 @@ public class Summator implements Catcher, Loader.Processor {
 			{
 				if (time_ > fw.offset_end)
 				{
-					//Utils.Dbg("%d |  %s[%d] MATCH:  index:%d max:%f",time_, fw.fp.Id(), fw.id, fw.index, fw.max_offset);		
+					//Utils.Dbg("%d |  %s[%d] MATCH:  index:%d max:%f",time_, fw.fp.Id(), 0, fw.index, fw.max_offset);		
 					if (fw.max_offset > 0.1)
 					{		
 						fw.Next(fw.maxed_time);
@@ -162,7 +175,7 @@ public class Summator implements Catcher, Loader.Processor {
 					}
 					else
 					{
-						//Utils.Dbg("%d| %s[%d] NOTMATCH:  index:%d/%f", time_, fw.fp.Id(), fw.id,fw.index, fw.max_offset);
+						//Utils.Dbg("%d| %s[%d] NOTMATCH:  index:%d/%f", time_, fw.fp.Id(), 0,fw.index, fw.max_offset);
 						removes.add(fw);
 					}
 				}

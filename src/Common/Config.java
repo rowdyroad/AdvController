@@ -13,6 +13,8 @@ public class Config {
 	public static String Filename = "soas.ini";
 	private Properties properties_;
 	
+	private int buffer_count_ = 500;
+	
 	static public Config Instance()
 	{
 		if (instance_ == null)
@@ -37,6 +39,7 @@ public class Config {
 		      frequency_step_ = Integer.decode(p.getProperty("frequency_step",String.valueOf(frequency_step_)));
 		      overlapped_coef_ = Integer.decode(p.getProperty("overlapped_coef",String.valueOf(overlapped_coef_)));
 		      levels_count_ = Integer.valueOf(p.getProperty("levels_count",String.valueOf(levels_count_)));
+		      buffer_count_ = Integer.valueOf(p.getProperty("buffer_count",String.valueOf(buffer_count_)));
 		      min_frequency_ = Integer.decode(p.getProperty("min_frequency",String.valueOf(min_frequency_)));
 		      max_frequency_ = Integer.decode(p.getProperty("max_frequency",String.valueOf(max_frequency_)));
 			  noise_gate_ = Double.parseDouble(p.getProperty("noise_gate",String.valueOf(noise_gate_)));
@@ -47,7 +50,11 @@ public class Config {
 		  }
 	}
 	
-	
+	public int BufferCount()
+	{
+		return buffer_count_;
+		
+	}
 	public double NoiseGate()
 	{
 		return noise_gate_;

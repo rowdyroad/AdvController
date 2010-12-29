@@ -29,6 +29,7 @@ public class FrequencyCalibrator extends Calibrator
 	
 		while (db.length - index >= WINDOW_SIZE)
 		{
+			
 			System.arraycopy(db,index,data_, 0, WINDOW_SIZE);
 			index+=WINDOW_SIZE;
 			fft_.transform(data_,null);		
@@ -43,13 +44,18 @@ public class FrequencyCalibrator extends Calibrator
 				}
 			}	
 			
-			if (max < 10000) continue;
-			int freq = (int)(Math.round((double)source_.GetSettings().SampleRate() / data_.length * max_index));
+			double  db_max = Double.NEGATIVE_INFINITY;
+			for (int i = 0; i < db.length; ++i)
+			{
+				db_max = Math.max(db_max, db[i]);
+			}
 			
-			Utils.Dbg("%d - %f",freq,max);
+			//if (max < 1000) continue;
+			int freq = (int)(Math.round((double)source_.GetSettings().SampleRate() / data_.length * max_index));
 			min_frequency_ = Math.min(min_frequency_, freq);
 			max_frequency_ = Math.max(max_frequency_, freq);
-			
+			Utils.Dbg("%d - %f  / %d %d [%f]",freq,max,min_frequency_,max_frequency_,db_max);
+
 		}
 	}
 

@@ -39,6 +39,8 @@ public class Frequencier implements Source.AudioReceiver {
 				
 				double[] ret = over.Overlapp(db);
 				if (ret == null) break;
+				
+				Utils.Dbg("Samples received");
 				catcher_.OnReceived(mfcc_.process(ret),overlap_length_);				
 			}
 		} catch(IOException e)

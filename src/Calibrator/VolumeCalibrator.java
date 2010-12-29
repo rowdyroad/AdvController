@@ -26,7 +26,7 @@ public class VolumeCalibrator extends Calibrator
 			//Utils.Dbg(a);
 			max = Math.max(max,a);
 		}
-		//Utils.Dbg(max);
+		Utils.Dbg(max);
 		
 		if (!Double.isNaN(max) && ! Double.isInfinite(max) )
 		{

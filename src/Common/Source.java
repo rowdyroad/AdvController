@@ -1,5 +1,6 @@
 package Common;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -10,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
+
+import Streamer.RingBuffer;
 
 public class Source implements Runnable {
 
@@ -67,10 +70,8 @@ public class Source implements Runnable {
 		RIGHT_CHANNEL
 	}
 
-	private int frameSize_;
-	private int readChunkSize_;
-	private byte[] cache_;
-	private int cache_len_ = 0;
+	private int frame_size_;
+	private int read_chunk_size_;
 	private Settings settings_;
 	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
 	
@@ -78,26 +79,19 @@ public class Source implements Runnable {
 	{
 		return settings_;
 	}
-	private class Buffer
-	{
-		byte[] buffer;
-		int length;
-		public Buffer(byte[] buffer, int length)
-		{
-			this.buffer = buffer;
-			this.length = length;
-		}
-	}
 
-	private List<Buffer> buffer_ = Collections.synchronizedList(new LinkedList<Buffer>());
 	private Thread thread_;
-
+	private RingBuffer ring_buffer_ ;
+	private byte[] read_buffer_;
+	private byte[] process_buffer_;
 	public Source(InputStream stream, Settings settings)
 	{
 		stream_ = stream;
-		frameSize_ = settings.Channels() * settings.SampleSize();
-		readChunkSize_ =  settings.WindowSize() * frameSize_;
-		cache_ = new byte[readChunkSize_];
+		frame_size_ = settings.Channels() * settings.SampleSize();
+		read_chunk_size_ =  settings.WindowSize() * frame_size_;
+		read_buffer_ =  new byte[read_chunk_size_];
+		process_buffer_ = new byte[read_chunk_size_];
+		ring_buffer_ = new RingBuffer(read_chunk_size_* Config.Instance().BufferCount());
 		settings_ = settings;
 	}
 
@@ -124,7 +118,7 @@ public class Source implements Runnable {
 		double[] left = new double[settings_.WindowSize()];
 		double[] right = new double[settings_.WindowSize()];
 		int j = 0;	
-		for (int i = 0; i < len - frameSize_; i+=frameSize_, j++)
+		for (int i = 0; i < len - frame_size_; i+=frame_size_, j++)
 		{
 			if (settings_.Channels() == 2)
 			{
@@ -187,9 +181,23 @@ public class Source implements Runnable {
 							return;
 						}
 					}
+					else
+					{
+						if (ring_buffer_.getAvailable()  < read_chunk_size_)
+						{
+							break;
+						}
+					}
 				}
 				
-				while (! buffer_.isEmpty())
+				while (ring_buffer_.getAvailable() >= read_chunk_size_)
+				{
+					Utils.Dbg("Read:%d / %d", ring_buffer_.getAvailable(),read_chunk_size_);
+					ring_buffer_.get(process_buffer_,0,read_chunk_size_);
+					process(process_buffer_, read_chunk_size_);					
+				}
+				
+				/*while (! buffer_.isEmpty())
 				{				
 					Buffer buf = buffer_.get(0);
 					buffer_.remove(0);
@@ -230,7 +238,7 @@ public class Source implements Runnable {
 						process(b,ret);
 						continue;
 					}
-				}
+				}*/
 		}
 	}
 
@@ -240,46 +248,49 @@ public class Source implements Runnable {
 		return stream_;
 	}
 
+
+	
+	
 	@Override
 	public  void  run() 
 	{
 		while (true)
 		{
-			byte[] buf = new byte[readChunkSize_];
-			int ret;
-			try {
-				ret = stream_.read(buf);
-				if (ret == -1)
+				try 
 				{
-					buffer_.add(null);
-					synchronized(this)
+					
+					int ret = stream_.read(read_buffer_);
+					//Utils.Dbg("Read from in:%d",ret);
+					if (ret == - 1)
 					{
-						notify();
+						synchronized(this)
+						{
+							notify();
+							break;
+						}
 					}
-					return;
-				}
-				
-				byte max = 0;
-				for (int i = 0; i < ret; ++i)
-				{
-					max = (byte) Math.max(max, buf[i]);
-				}
-				buffer_.add(new Buffer(buf, ret));				
-				synchronized(this)
-				{
-					notify();
-				}
-			} 
+					if (ret > 0 )
+					{							
+						ring_buffer_.put(read_buffer_, 0, ret);
+						if (ring_buffer_.getAvailable() >= read_chunk_size_  || ring_buffer_.putAvailable() < read_chunk_size_ )
+						{
+							Utils.Dbg("Write: %d / %d",ring_buffer_.getAvailable(), read_chunk_size_);
+							synchronized(this)
+							{
+								notify();
+							}
+						}
+					}
+				} 
 			catch (IOException e) 
 			{
-				buffer_.add(null);
+				Utils.Dbg("EXCEPTION:%s",e.getMessage());
+				e.printStackTrace();
 				synchronized(this)
 				{
 					notify();
+					break;
 				}
-				e.printStackTrace();
-
-				return;
 			}
 		}
 	}
