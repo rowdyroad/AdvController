@@ -29,9 +29,7 @@ public class Streamer
 		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);
 		settings_ = new Settings(format);
 		loader_ = new Loader(Config.Instance().PromosPath());
-		
-		try
-		{	
+
 			InputStream stream = null;
 			if (Config.Instance().Source().equals("soundcard"))
 			{
@@ -66,17 +64,19 @@ public class Streamer
 					stream = p.getInputStream();
 			};
 			
+			
+			if (stream.available() == 0)
+			{
+				throw new Exception("Nothing to read at the start of streamer");
+			}
+			
 			if (stream ==null)
 			{
 				throw new Exception(String.format("Incorrect source %s", Config.Instance().Source()));
 			}
 			
-			source_ = new Source(stream, settings_);			
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+			source_ = new Source(stream, settings_, Common.Config.Instance().BufferCount());			
+
 	}
 	
 	public void Process()

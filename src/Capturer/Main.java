@@ -12,7 +12,7 @@ public class Main {
 
 	private static void usage()
 	{
-		Utils.Dbg("Usage: %s\n\t-c <config_file>\n\t-f <min_frequency>\n\t-F <max_frequency> \n\t-p <wav_file>,<result_file>,<promo_id>,...", Main.class.getName());
+		Utils.Dbg("Usage: %s\n\t-c <config_file>\n\t-f <min_frequency>\n\t-F <max_frequency> \n\t-p <wav_file>,<result_file>,<promo_id>,...\n-b <buffer_count>", Main.class.getName());
 		System.exit(1);		
 	}
 	
@@ -26,13 +26,13 @@ public class Main {
 		Args args = new Args(a);
 		int min_freq = args.GetInt("f",-1);
 		int max_freq = args.GetInt("F",-1);
+		int buffer_count = args.GetInt("b", 100);
 		String p = args.Get("p","");
-		
 		if (min_freq == -1 || max_freq == -1 || p.isEmpty())
 		{
 			usage();
 		}
-		
+	
 		String[]  promos = p.split(",");
 		if (promos.length % 3 != 0)
 		{
@@ -41,7 +41,8 @@ public class Main {
 		
 		try
 		{
-			Utils.Dbg("Min Frequency:%d\nMaxFrequency:%d",min_freq,max_freq);
+			Utils.Dbg("Min Frequency: %d  MaxFrequency: %d",min_freq,max_freq);
+			Utils.Dbg("Buffer Count: %d",buffer_count);
 			Utils.Dbg("Files to convert: %d", promos.length / 3);
 			for (int i = 0; i < promos.length; i+=3)
 			{
@@ -50,7 +51,7 @@ public class Main {
 				String result_file = promos[i+1];
 				String promo_id = promos[i+2];
 				Utils.Dbg("Filename: %s\nResult file:%s\nPromoID: %s", wav_file, result_file, promo_id);	
-				Capturer capt = new Capturer(wav_file,  promo_id, min_freq, max_freq);
+				Capturer capt = new Capturer(wav_file,  promo_id, min_freq, max_freq,buffer_count);
 				capt.Process().Serialize(result_file);
 				Utils.Dbg("Time to work: %d ms", System.currentTimeMillis() - time);
 			}

@@ -19,11 +19,11 @@ public class Capturer implements Frequencier.Catcher
 	FingerPrint fp_;
 	private Settings settings_;
 	
-	public Capturer(String filename, String id, int min_frequency, int max_frequency) throws Exception
+	public Capturer(String filename, String id, int min_frequency, int max_frequency, int buffer_count) throws Exception
 	{
 		AudioInputStream stream = AudioSystem.getAudioInputStream(new File(filename));
 		settings_ = new Settings(stream.getFormat());
-		source_ = new Source(stream, settings_);
+		source_ = new Source(stream, settings_,buffer_count);
 		if (Config.Instance().Channel() == "right")
 		{
 			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(), min_frequency, max_frequency));
@@ -48,7 +48,7 @@ public class Capturer implements Frequencier.Catcher
 
 	Vector<double[]> list = new Vector<double[]>();
 	@Override
-	public boolean OnReceived(double[][] frequency, long timeoffset) 
+	public boolean OnReceived(float[][] frequency, long timeoffset) 
 	{
 		fp_.Add(frequency, time_);
 		time_+=timeoffset;

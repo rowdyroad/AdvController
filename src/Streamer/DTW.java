@@ -2,26 +2,26 @@ package Streamer;
 
 public class DTW {
 
-    private double pointDistance(int i, int j, double[][]  doublesOne, double[][] doublesTwo) {
-        double diff = 0;
+    private float pointDistance(int i, int j, float[][]  doublesOne, float[][] doublesTwo) {
+    	float diff = 0;
         for (int k = 0; k < doublesOne[i].length; k++) {
             diff += ((doublesOne[i][k] - doublesTwo[j][k]) * (doublesOne[i][k] - doublesTwo[j][k]));
         }
         return diff;
     }
 
-    private double distance2Similarity(double x) {
-        return (1.0 - (x / (1 + x)));
+    private float distance2Similarity(float x) {
+        return 1.0f - (x / (1 + x));
     }
 
     
     
-    public double measure(double[][] doublesOne, double[][] doublesTwo) {
+    public float measure(float[][] doublesOne, float[][] doublesTwo) {
 
         int i, j;
 
         /** Build a point-to-point distance matrix */
-        double[][] dP2P = new double[doublesOne.length][doublesTwo.length];
+        float[][] dP2P = new float[doublesOne.length][doublesTwo.length];
         for (i = 0; i < doublesOne.length; i++) {
             for (j = 0; j < doublesTwo.length; j++) {
                 dP2P[i][j] = pointDistance(i, j, doublesOne, doublesTwo);
@@ -30,18 +30,18 @@ public class DTW {
 
         /** Check for some special cases due to ultra short time series */
         if (doublesOne.length == 0 || doublesTwo.length == 0) {
-            return Double.NaN;
+            return Float.NaN;
         }
 
         if (doublesOne.length == 1 && doublesTwo.length == 1) {
-            return distance2Similarity(Math.sqrt(dP2P[0][0]));
+            return distance2Similarity((float)Math.sqrt(dP2P[0][0]));
         }
 
         /**
          * Build the optimal distance matrix using a dynamic programming
          * approach
          */
-        double[][] D = new double[doublesOne.length][doublesTwo.length];
+        float[][] D = new float[doublesOne.length][doublesTwo.length];
 
         D[0][0] = dP2P[0][0]; // Starting point
 
@@ -52,11 +52,11 @@ public class DTW {
         }
 
         if (doublesTwo.length == 1) { // doublesTwo is a point
-            double sum = 0;
+            float sum = 0;
             for (i = 0; i < doublesOne.length; i++) {
                 sum += D[i][0];
             }
-            return distance2Similarity(Math.sqrt(sum) / doublesOne.length);
+            return distance2Similarity((float)Math.sqrt(sum) / doublesOne.length);
         }
 
         for (j = 1; j < doublesTwo.length; j++) { // Fill the first row of our
@@ -66,17 +66,17 @@ public class DTW {
         }
 
         if (doublesOne.length == 1) { // doublesOne is a point
-            double sum = 0;
+        	float sum = 0;
             for (j = 0; j < doublesTwo.length; j++) {
                 sum += D[0][j];
             }
-            return distance2Similarity(Math.sqrt(sum) / doublesTwo.length);
+            return distance2Similarity((float)Math.sqrt(sum) / doublesTwo.length);
         }
 
         for (i = 1; i < doublesOne.length; i++) { // Fill the rest
             for (j = 1; j < doublesTwo.length; j++) {
-                double[] steps = {D[i - 1][j - 1], D[i - 1][j], D[i][j - 1]};
-                double min = Math.min(steps[0], Math.min(steps[1], steps[2]));
+                float[] steps = {D[i - 1][j - 1], D[i - 1][j], D[i][j - 1]};
+                float min = Math.min(steps[0], Math.min(steps[1], steps[2]));
                 D[i][j] = dP2P[i][j] + min;
             }
         }
@@ -112,7 +112,7 @@ public class DTW {
          //   dist += D[i][j];
         }
 
-        return distance2Similarity(Math.sqrt(dist) / k);
+        return distance2Similarity((float)Math.sqrt(dist) / k);
     }
 
 }

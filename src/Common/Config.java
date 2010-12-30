@@ -13,7 +13,7 @@ public class Config {
 	public static String Filename = "soas.ini";
 	private Properties properties_;
 	
-	private int buffer_count_ = 500;
+	private int buffer_count_ = 100;
 	
 	static public Config Instance()
 	{

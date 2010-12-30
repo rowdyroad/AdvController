@@ -5,7 +5,7 @@ public class Frequencier implements Source.AudioReceiver {
 
 	public interface Catcher
 	{
-		public boolean OnReceived(double[][]  mfcc, long timeoffset);
+		public boolean OnReceived(float[][]  mfcc, long timeoffset);
 		public void OnError();
 	}
 	
@@ -23,24 +23,19 @@ public class Frequencier implements Source.AudioReceiver {
 		over =   new Overlapper(65536, overlap_length_);
 	}
 	
-	int size = 8192;
-	double[] cache = new double[8192];
 
 	private util.MFCC mfcc_;
 	Overlapper over;
 	
 	@Override
-	public void OnSamplesReceived(double[] db) 
+	public void OnSamplesReceived( float[] db) 
 	{
 		try 
 		{
 			while (true)
 			{
-				
-				double[] ret = over.Overlapp(db);
+				 float[] ret = over.Overlapp(db);
 				if (ret == null) break;
-				
-				Utils.Dbg("Samples received");
 				catcher_.OnReceived(mfcc_.process(ret),overlap_length_);				
 			}
 		} catch(IOException e)

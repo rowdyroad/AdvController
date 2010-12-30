@@ -221,8 +221,36 @@ public class Main {
 		
 	}
 	
+	
+	static private int[] id = new int[100000];
+	
+	public static void Memory(int z)
+	{
+		if (id[z] > z)
+		{
+			
+		}
+	}
+	public static void Circle(int z)
+	{
+		for (int i = 0;  i < 100000; ++i)
+		{
+			if (i > z)
+			{		
+				break;
+			}
+		}
+	}
+	
 	public static void main (String args [])
 	{
+		
+		for (int i = 0; i < 1000; ++i)
+		{
+			Memory(i);
+			Circle(i);
+		}
+			
 		//testOver();
 		/*Vector<Double> d = new Vector<Double>();
 		
@@ -249,7 +277,7 @@ public class Main {
 		}
 		
 		Utils.Dbg("Array: %d", System.currentTimeMillis() - time);
-	*/
+	
 		double[] b = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 		
 		Matrix m = new Matrix(b, 8);
@@ -281,7 +309,7 @@ public class Main {
 		      } catch(ArrayIndexOutOfBoundsException e) {
 		         throw new ArrayIndexOutOfBoundsException("Submatrix indices");
 		      }
-		      
+	*/	      
 		      
 		      
 		      

@@ -2,66 +2,42 @@ package util;
 
 import Common.Utils;
 
-
-/**
- * Class for computing a windowed fast Fourier transform.
- *  Implements some of the window functions for the STFT from
- *  Harris (1978), Proc. IEEE, 66, 1, 51-83.
- */
 public final class FFT
 {
-  /** used in {@link FFT#fft(double[], double[], int)} to specify
-   *  a forward Fourier transform */
-  public static final int FFT_FORWARD = -1;
-  /** used in {@link FFT#fft(double[], double[], int)} to specify
-   * an inverse Fourier transform */
-  public static final int FFT_REVERSE = 1;
-  /** used to specify a magnitude Fourier transform */
-  public static final int FFT_MAGNITUDE = 2;
-  /** used to specify a magnitude phase Fourier transform */
-  public static final int FFT_MAGNITUDE_PHASE = 3;
-  /** used to specify a normalized power Fourier transform */
-  public static final int FFT_NORMALIZED_POWER = 4;
-  /** used to specify a power Fourier transform */
-  public static final int FFT_POWER = 5;
-  /** used to specify a power phase Fourier transform */
-  public static final int FFT_POWER_PHASE = 6;
-  /** used to specify a inline power phase Fourier transform */
-  public static final int FFT_INLINE_POWER_PHASE = 7;
+	public static final int FFT_FORWARD = -1;
+	public static final int FFT_REVERSE = 1;
+	public static final int FFT_MAGNITUDE = 2;
+	public static final int FFT_MAGNITUDE_PHASE = 3;
+	public static final int FFT_NORMALIZED_POWER = 4;
+	public static final int FFT_POWER = 5;
+	public static final int FFT_POWER_PHASE = 6;
+	public static final int FFT_INLINE_POWER_PHASE = 7;
 
-
-  /** used to specify a rectangular window function */
-  public static final int WND_NONE = -1;
-  /** used to specify a rectangular window function */
+	public static final int WND_NONE = -1;
 	public static final int WND_RECT = 0;
-	/** used to specify a Hamming window function */
 	public static final int WND_HAMMING = 1;
-	/** used to specify a 61-dB 3-sample Blackman-Harris window function */
 	public static final int WND_BH3 = 2;
-	/** used to specify a 74-dB 4-sample Blackman-Harris window function */
 	public static final int WND_BH4 = 3;
-	/** used to specify a minimum 3-sample Blackman-Harris window function */
 	public static final int WND_BH3MIN = 4;
-	/** used to specify a minimum 4-sample Blackman-Harris window function */
 	public static final int WND_BH4MIN = 5;
-	/** used to specify a Gaussian window function */
 	public static final int WND_GAUSS = 6;
-  /** used to specify a Hanning window function */
-  public static final int WND_HANNING = 7;
-  /** used to specify a Hanning window function */
-  public static final int WND_USER_DEFINED = 8;
-  /** used to specify a Hanning Z window function */
-  public static final int WND_HANNINGZ = 9;  
-  public static final int WND_BLACKMAN_NUTTALL= 10;
+	public static final int WND_HANNING = 7;
+	public static final int WND_USER_DEFINED = 8;
+	public static final int WND_HANNINGZ = 9;  
+	public static final int WND_BLACKMAN_NUTTALL= 10;
 
-  private double[] windowFunction;
-  private double windowFunctionSum;
-  private int windowFunctionType;
-  private int transformationType;
-  private int windowSize;
-  private static final double twoPI = 2 * Math.PI;
+	private  float[] windowFunction;
+	private  float windowFunctionSum;
+	private int windowFunctionType;
+	private int transformationType;
+	private int windowSize;
+	private static final  float twoPI = (float) (2 * Math.PI);
+	private 	int bits;
+	private   float[]  Wj_rs;
+	private   float[]  Wj_is;
+	private  int[] Tj;
 
-  public FFT(int transformationType, int windowSize)
+	public FFT(int transformationType, int windowSize)
   {
     this(transformationType, windowSize, WND_NONE, windowSize);
   }
@@ -73,6 +49,29 @@ public final class FFT
 
   public FFT(int transformationType, int windowSize, int windowFunctionType, int support)
   {
+	 bits = (int)Math.rint(Math.log(windowSize) / Math.log(2));
+	 Wj_rs = new  float[bits+1];
+	 Wj_is = new  float[bits+1];	
+	for(int m = 1; m <= bits; m++)
+	{
+		int localN = 1 << m;
+		Wj_rs[m] = (float) Math.cos(twoPI / localN);
+		Wj_is[m] = (float) - Math.sin(twoPI / localN);			
+	}
+	
+	Tj= new int[windowSize-1];
+	int j = 0;
+	int start = windowSize >> 1;
+	for (int i = 0; i <  windowSize -1 ; ++i)
+	{
+		Tj[i] = j;
+		int k;
+		for (k = start; k <= j; k = k >> 1)
+		{
+			j-=k;				
+		}		
+		j+=k;
+	}
     //check and set fft type
     this.transformationType = transformationType;
     if(transformationType < -1 || transformationType > 7)
@@ -87,11 +86,11 @@ public final class FFT
       throw new IllegalArgumentException("fft data must be power of 2");
 
     //create window function buffer and set window function
-    this.windowFunction = new double[windowSize];
+    this.windowFunction = new  float[windowSize];
     setWindowFunction(windowFunctionType, support);
   }
 
-  public FFT(int transformationType, int windowSize, double[] windowFunction)
+  public FFT(int transformationType, int windowSize,  float[] windowFunction)
   {
     this(transformationType, windowSize, WND_NONE, windowSize);
 
@@ -108,7 +107,7 @@ public final class FFT
 
   }
 
-  public void transform(double[] re, double[] im)
+  public void transform( float[] re,  float[] im)
   {
     //check for correct size of the real part data array
     if(re.length < windowSize)
@@ -134,13 +133,13 @@ public final class FFT
           powerPhaseIFFT(re, im);
         break;
       case FFT_MAGNITUDE:
-        magnitudeFFT(re);
+  //      magnitudeFFT(re);
         break;
       case FFT_MAGNITUDE_PHASE:
         if(im.length < windowSize)
           throw new IllegalArgumentException("data array smaller than fft window size");
         else
-          magnitudePhaseFFT(re, im);
+      //    magnitudePhaseFFT(re, im);
         break;
       case FFT_NORMALIZED_POWER:
         normalizedPowerFFT(re);
@@ -152,7 +151,7 @@ public final class FFT
         if(im.length < windowSize)
           throw new IllegalArgumentException("data array smaller than fft window size");
         else
-          powerPhaseFFT(re, im);
+        //  powerPhaseFFT(re, im);
         break;
       case FFT_REVERSE:
         if(im.length < windowSize)
@@ -162,80 +161,58 @@ public final class FFT
         break;
     }
   }
-
-
-	/** The FFT method. Calculation is inline, for complex data stored
-	 *  in 2 separate arrays. Length of input data must be a power of two.
-	 *  @param re        the real part of the complex input and output data
-	 *  @param im        the imaginary part of the complex input and output data
-	 *  @param direction the direction of the Fourier transform (FORWARD or
-	 *  REVERSE)
-	 *  @throws IllegalArgumentException if the length of the input data is
-	 *  not a power of 2
-	 */
   
-  
-  
-	private void fft(double re[], double im[], int direction)
-   {
+  private void fft( float re[],  float im[], int direction)
+  {
 		int n = re.length;
-		int bits = (int)Math.rint(Math.log(n) / Math.log(2));
-
-		int localN;
-		int j = 0;
-		for (int i = 0; i < n-1; i++)
+		int last = n - 1;
+		for (int i = 0; i < last; ++i)
 		{
+			int j = Tj[i];
 			if (i < j)
 			{
-				double temp = re[j];
+				 float temp = re[j];
 				re[j] = re[i];
 				re[i] = temp;
 			}
-			
-			int k = n >> 1;
-			while ((k >= 1) &&  (k - 1 < j))
-			{
-				j -=k;
-				k  = k >>  1;
-			}
-			j +=k;
-	}
+		}
 
+		int localN = 0;
 		for(int m = 1; m <= bits; m++)
 		{
 			localN = 1 << m;
-			double Wjk_r = 1;
-			double Wjk_i = 0;
-			double theta = twoPI / localN;
-			double Wj_r = Math.cos(theta);
-			double Wj_i = direction * Math.sin(theta);
-			int nby2 = localN / 2;
-			for (j = 0; j < nby2; j++)
+			 float Wjk_r = 1;
+			 float Wjk_i = 0;
+			 float Wj_r = Wj_rs[m];
+			 float Wj_i = Wj_is[m];
+			int nby2 = localN >>  1;			
+			for (int j = 0; j < nby2; ++j)
 			{
 				for (int k = j; k < n; k += localN)
 				{
 					int id = k + nby2;
-					double tempr = Wjk_r * re[id] - Wjk_i * im[id];
-					double tempi = Wjk_r * im[id] + Wjk_i * re[id];
+					 float tempr = Wjk_r * re[id] - Wjk_i * im[id];
+					 float tempi = Wjk_r * im[id] + Wjk_i * re[id];
 					re[id] = re[k] - tempr;
 					im[id] = im[k] - tempi;
 					re[k] += tempr;
 					im[k] += tempi;
-				}	
-				double wtemp = Wjk_r;
-				Wjk_r = Wj_r * Wjk_r - Wj_i * Wjk_i;
+				}
+				 float wtemp = Wjk_r;
+				Wjk_r = Wj_r * Wjk_r  - Wj_i * Wjk_i;
 				Wjk_i = Wj_r * Wjk_i  + Wj_i * wtemp;
 			}
 		}
+		
 	}
 
 
 	/** Computes the power spectrum of a real sequence (in place).
 	 *  @param re the real input and output data; length must be a power of 2
 	 */
-	private void powerFFT(double[] re)
+	private void powerFFT( float[] re)
   {
-		double[] im = new double[re.length];
+		 float[] im = new  float[re.length];
 
 		fft(re, im, FFT_FORWARD);
 
@@ -247,23 +224,23 @@ public final class FFT
   /** Computes the magnitude spectrum of a real sequence (in place).
    *  @param re the real input and output data; length must be a power of 2
 	 */
-  private void magnitudeFFT(double[] re)
+  private void magnitudeFFT( float[] re)
   {
-    double[] im = new double[re.length];
+	  float[] im = new  float[re.length];
 
     fft(re, im, FFT_FORWARD);
 
     for (int i = 0; i < re.length; i++)
-      re[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]);
+      re[i] = (float) Math.sqrt(re[i] * re[i] + im[i] * im[i]);
   }
 
 
   /** Computes the power spectrum of a real sequence (in place).
    *  @param re the real input and output data; length must be a power of 2
    */
-  private void normalizedPowerFFT(double[] re)
+  private void normalizedPowerFFT( float[] re)
   {
-    double[] im = new double[re.length];
+	  float[] im = new  float[re.length];
     double r, i;
 
     fft(re, im, FFT_FORWARD);
@@ -272,7 +249,7 @@ public final class FFT
     {
       r = re[j] / windowFunctionSum * 2;
       i = im[j] / windowFunctionSum * 2;
-      re[j] = r * r + i * i;
+      re[j] = (float) (r * r + i * i);
     }
   }
 
@@ -282,10 +259,10 @@ public final class FFT
 	 *  @param re the real input (power) and output (magnitude) data; length
 	 *  must be a power of 2
 	 */
-	private void toMagnitude(double[] re)
+	private void toMagnitude( float[] re)
   {
 		for (int i = 0; i < re.length; i++)
-			re[i] = Math.sqrt(re[i]);
+			re[i] = (float) Math.sqrt(re[i]);
 	}
 
 
@@ -297,14 +274,14 @@ public final class FFT
 	 *  @param im the imaginary part of the input data and the phase of the
 	 *  output data
 	 */
-	private void powerPhaseFFT(double[] re, double[] im)
+	private void powerPhaseFFT( float[] re,  float[] im)
   {
 		fft(re, im, FFT_FORWARD);
 
 		for (int i = 0; i < re.length; i++)
     {
-			double pow = re[i] * re[i] + im[i] * im[i];
-			im[i] = Math.atan2(im[i], re[i]);
+			 float pow = re[i] * re[i] + im[i] * im[i];
+			im[i] = (float) Math.atan2(im[i], re[i]);
 			re[i] = pow;
 		}
 	}
@@ -318,14 +295,14 @@ public final class FFT
 	 *  @param ph the phase of the spectral input data (and the imaginary part
 	 *  of the output data)
 	 */
-	private void powerPhaseIFFT(double[] pow, double[] ph)
+	private void powerPhaseIFFT( float[] pow,  float[] ph)
   {
 		toMagnitude(pow);
 
 		for (int i = 0; i < pow.length; i++)
     {
-			double re = pow[i] * Math.cos(ph[i]);
-			ph[i] = pow[i] * Math.sin(ph[i]);
+			 float re = (float) (pow[i] * Math.cos(ph[i]));
+			ph[i] = (float) (pow[i] * Math.sin(ph[i]));
 			pow[i] = re;
 		}
 
@@ -341,7 +318,7 @@ public final class FFT
 	 *  @param im the imaginary part of the input data and the phase of the
 	 *  output data
 	 */
-	private void magnitudePhaseFFT(double[] re, double[] im)
+	private void magnitudePhaseFFT( float[] re,  float[] im)
   {
 		powerPhaseFFT(re, im);
 		toMagnitude(re);
@@ -357,11 +334,11 @@ public final class FFT
   {
     int start = (windowFunction.length - size) / 2;
 		int stop = (windowFunction.length + size) / 2;
-		double scale = 1.0 / (double)size / 0.54;
-		double factor = twoPI / (double)size;
+		 float scale = (float) (1.0 * 0.54 / size );
+		 float factor = twoPI / ( float)size;
 
 		for (int i = 0; start < stop; start++, i++)
-			windowFunction[i] = scale * (25.0/46.0 - 21.0/46.0 * Math.cos(factor * i));
+			windowFunction[i] = (float) (scale * (25.0/46.0 - 21.0/46.0 * Math.cos(factor * i)));
 	}
 
 
@@ -374,10 +351,10 @@ public final class FFT
   {
     int start = (windowFunction.length - size) / 2;
     int stop = (windowFunction.length + size) / 2;
-    double factor = twoPI / (size - 1.0d);
+    float factor = (float) (twoPI / (size - 1.0f));
 
     for (int i = 0; start < stop; start++, i++)
-      windowFunction[i] = 0.5 * (1 - Math.cos(factor * i));
+      windowFunction[i] = (float) (0.5 * (1 - Math.cos(factor * i)));
   }
   
   /** In MATLABTM, picking up the standard hanning window gives an incorrect periodicity,
@@ -396,7 +373,7 @@ public final class FFT
     int stop = (windowFunction.length + size) / 2;
 
     for (int i = 0; start < stop; start++, i++)
-      windowFunction[i]	= 0.5 * (1 - Math.cos((twoPI*i)/size));
+      windowFunction[i]	= (float) (0.5 * (1 - Math.cos((twoPI*i)/size)));
   }
 
 private void blackmanNuttall(int size)
@@ -406,8 +383,8 @@ private void blackmanNuttall(int size)
     
 	for (int i =0; start < stop; start++, ++i)
 	{
-		double w = twoPI * i / windowSize;
-		windowFunction[i] =  (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
+		 float  w = twoPI * i / windowSize;
+		windowFunction[i] =  (float) (0.3635819 - 0.4891775*Math.cos(w) + 0.1365995*Math.cos(2*w) - 0.0106411*Math.cos(3*w));
 	}
 }
 
@@ -421,13 +398,13 @@ private void blackmanNuttall(int size)
   {
     int start = (windowFunction.length - size) / 2;
 		int stop = (windowFunction.length + size) / 2;
-		double scale = 1.0 / (double)size / 0.36;
+		 float  scale = 1.0f * 0.36f /  size;
 
 		for (int i = 0; start < stop; start++, i++)
-			windowFunction[i] = scale * ( 0.35875 -
+			windowFunction[i] = (float) (scale * ( 0.35875 -
 								0.48829 * Math.cos(twoPI * i / size) +
 								0.14128 * Math.cos(2 * twoPI * i / size) -
-								0.01168 * Math.cos(3 * twoPI * i / size));
+								0.01168 * Math.cos(3 * twoPI * i / size)));
 	}
 
 
@@ -441,13 +418,13 @@ private void blackmanNuttall(int size)
   {
     int start = (windowFunction.length - size) / 2;
 		int stop = (windowFunction.length + size) / 2;
-		double scale = 1.0 / (double)size / 0.4;
+		float scale = 1.0f  * 0.4f / size;
 
 		for (int i = 0; start < stop; start++, i++)
-			windowFunction[i] = scale * ( 0.40217 -
+			windowFunction[i] = (float) (scale * ( 0.40217 -
 								0.49703 * Math.cos(twoPI * i / size) +
 								0.09392 * Math.cos(2 * twoPI * i / size) -
-								0.00183 * Math.cos(3 * twoPI * i / size));
+								0.00183 * Math.cos(3 * twoPI * i / size)));
 	}
 
 
@@ -461,12 +438,12 @@ private void blackmanNuttall(int size)
   {
 		int start = (windowFunction.length - size) / 2;
 		int stop = (windowFunction.length + size) / 2;
-		double scale = 1.0 / (double) size / 0.42;
+		float scale = 1.0f * 0.42f / size;
 
 		for (int i = 0; start < stop; start++, i++)
-			windowFunction[i] = scale * ( 0.42323 -
+			windowFunction[i] = (float) (scale * ( 0.42323 -
 								0.49755 * Math.cos(twoPI * i / size) +
-								0.07922 * Math.cos(2 * twoPI * i / size));
+								0.07922 * Math.cos(2 * twoPI * i / size)));
 	}
 
 
@@ -480,12 +457,12 @@ private void blackmanNuttall(int size)
   {
 		int start = (windowFunction.length - size) / 2;
 		int stop = (windowFunction.length + size) / 2;
-		double scale = 1.0 / (double) size / 0.45;
+		float scale = 1.0f * 0.45f / size;
 
 		for (int i = 0; start < stop; start++, i++)
-			windowFunction[i] = scale * ( 0.44959 -
+			windowFunction[i] = (float) (scale * ( 0.44959 -
 								0.49364 * Math.cos(twoPI * i / size) +
-								0.05677 * Math.cos(2 * twoPI * i / size));
+								0.05677 * Math.cos(2 * twoPI * i / size)));
 	}
 
 
@@ -498,14 +475,14 @@ private void blackmanNuttall(int size)
   { // ?? between 61/3 and 74/4 BHW
 		int start = (windowFunction.length - size) / 2;
 		int stop = (windowFunction.length + size) / 2;
-		double delta = 5.0 / size;
-		double x = (1 - size) / 2.0 * delta;
-		double c = -Math.PI * Math.exp(1.0) / 10.0;
-		double sum = 0;
+		float delta = 5.0f / size;
+		float x = (1 - size) / 2.0f * delta;
+		float c = (float) (-Math.PI * Math.exp(1.0) / 10.0);
+		float sum = 0;
 
     for (int i = start; i < stop; i++)
     {
-			windowFunction[i] = Math.exp(c * x * x);
+			windowFunction[i] = (float) Math.exp(c * x * x);
 			x += delta;
 			sum += windowFunction[i];
 		}
@@ -526,7 +503,7 @@ private void blackmanNuttall(int size)
 		int stop = (windowFunction.length + size) / 2;
 
 		for (int i = start; i < stop; i++)
-			windowFunction[i] = 1.0 / (double) size;
+			windowFunction[i] = 1.0f / size;
 	}
 
 
@@ -580,7 +557,7 @@ private void blackmanNuttall(int size)
 	 *  @param data   the array of input data, also used for output
 	 *  @param window the values of the window function to be applied to data
 	 */
-	private void applyWindowFunction(double[] data)
+	private void applyWindowFunction( float[] data)
   {
 		if(windowFunctionType != WND_NONE)
     {

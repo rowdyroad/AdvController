@@ -15,8 +15,8 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	private static final long serialVersionUID = 8559602924873961446L;
 	
 	private String id_;
-	private ArrayList<double[][]> mfcc_ = new ArrayList<double[][]>();
-	private ArrayList<Double> means_ = new ArrayList<Double>();
+	private ArrayList<float[][]> mfcc_ = new ArrayList<float[][]>();
+	private ArrayList<Float> means_ = new ArrayList<Float>();
 	private ArrayList<Long> times_ = new ArrayList<Long>();
 	private double sum_ = 0;
 	private double mean_ = 0;
@@ -28,23 +28,23 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	
 	public String Id() { return id_; }
 	
-	public double[][] Get(int index)
+	public float[][] Get(int index)
 	{
 		return mfcc_.get(index);
 	}
 
-	public boolean Add(double[][] mfcc, long time)
+	public boolean Add(float[][] mfcc, long time)
 	{
-		double v_mean = 0;
+		float v_mean = 0;
 		for (int j = 0; j < mfcc.length; ++j)
 		{
-			double[] data = mfcc[j];
-			double m = 0;
+			float[] data = mfcc[j];
+			float m = 0;
 			for (int k = 0; k < data.length; ++k)
 			{
 				m+=data[k]*data[k];
 			}
-			m = Math.sqrt(m);
+			m = (float) Math.sqrt(m);
 			v_mean+=m;
 		}
 		v_mean = v_mean / mfcc.length;

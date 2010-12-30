@@ -4,14 +4,14 @@ import java.util.Arrays;
 
 public class Overlapper 
 {
-	double[] data_;
+	private  float[] data_;
 	private int window_size_;
 	private int overlapped_length_;
 	private int data_length_;
 	public Overlapper(int windowSize,int overlappLength) 
 	{
 		window_size_ = windowSize;
-		data_ = new double[windowSize];
+		data_ = new  float[windowSize];
 		overlapped_length_ = overlappLength;
 		data_length_ = windowSize - overlapped_length_;
 	}
@@ -27,7 +27,7 @@ public class Overlapper
 		data_length_ = window_size_  - overlapped_length_;
 	}
 	
-	public double[] Overlapp(double [] data)
+	public  float[] Overlapp( float [] data)
 	{
 			if (current_data_ != data.hashCode())
 			{
@@ -43,7 +43,7 @@ public class Overlapper
 			
 			if (data_length_ == window_size_)
 			{
-				double []ret = Arrays.copyOf(data_, window_size_);
+				 float []ret = Arrays.copyOf(data_, window_size_);
 				System.arraycopy(data_,overlapped_length_, data_, 0, data_length_ - overlapped_length_);
 				data_length_ -= overlapped_length_;
 				return ret;

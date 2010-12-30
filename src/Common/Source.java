@@ -60,7 +60,7 @@ public class Source implements Runnable {
 
 	public interface AudioReceiver
 	{
-		public void OnSamplesReceived(double[] db);
+		public void OnSamplesReceived( float[] db);
 	}
 
 
@@ -84,14 +84,14 @@ public class Source implements Runnable {
 	private RingBuffer ring_buffer_ ;
 	private byte[] read_buffer_;
 	private byte[] process_buffer_;
-	public Source(InputStream stream, Settings settings)
+	public Source(InputStream stream, Settings settings, int buffer_count)
 	{
 		stream_ = stream;
 		frame_size_ = settings.Channels() * settings.SampleSize();
 		read_chunk_size_ =  settings.WindowSize() * frame_size_;
 		read_buffer_ =  new byte[read_chunk_size_];
 		process_buffer_ = new byte[read_chunk_size_];
-		ring_buffer_ = new RingBuffer(read_chunk_size_* Config.Instance().BufferCount());
+		ring_buffer_ = new RingBuffer(read_chunk_size_* buffer_count);
 		settings_ = settings;
 	}
 
@@ -106,17 +106,17 @@ public class Source implements Runnable {
 		receivers_.get(channel).add(receiver);
 	}
 
-	private double convertFromAr(byte[] b, int start, int end)
+	private float  convertFromAr(byte[] b, int start, int end)
 	{
 		ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
 		buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
-		return (double)buf.getShort() / Short.MAX_VALUE;
+		return ( float)buf.getShort() / Short.MAX_VALUE;
 	} 
 
 	private void process(byte[] buf, int len)
 	{
-		double[] left = new double[settings_.WindowSize()];
-		double[] right = new double[settings_.WindowSize()];
+		 float[] left = new  float[settings_.WindowSize()];
+		 float[] right = new  float[settings_.WindowSize()];
 		int j = 0;	
 		for (int i = 0; i < len - frame_size_; i+=frame_size_, j++)
 		{
@@ -193,8 +193,9 @@ public class Source implements Runnable {
 				while (ring_buffer_.getAvailable() >= read_chunk_size_)
 				{
 					Utils.Dbg("Read:%d / %d", ring_buffer_.getAvailable(),read_chunk_size_);
-					ring_buffer_.get(process_buffer_,0,read_chunk_size_);
-					process(process_buffer_, read_chunk_size_);					
+					ring_buffer_.get(process_buffer_,0,read_chunk_size_);		
+					Utils.Dbg("Mod:%d",ring_buffer_.getAvailable());
+					process(process_buffer_, read_chunk_size_);			
 				}
 				
 				/*while (! buffer_.isEmpty())
@@ -261,8 +262,9 @@ public class Source implements Runnable {
 					
 					int ret = stream_.read(read_buffer_);
 					//Utils.Dbg("Read from in:%d",ret);
-					if (ret == - 1)
+					if (ret <= 0)
 					{
+						Utils.Dbg("Nothing to read");
 						synchronized(this)
 						{
 							notify();
@@ -278,6 +280,7 @@ public class Source implements Runnable {
 							synchronized(this)
 							{
 								notify();
+								Thread.yield();
 							}
 						}
 					}

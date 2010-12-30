@@ -94,11 +94,11 @@ public class Summator implements Catcher, Loader.Processor {
 	} 
 	
 	@Override
-	public boolean OnReceived(double[][] mfcc, long timeoffset) 
+	public boolean OnReceived(float[][] mfcc, long timeoffset) 
 	{
 		FrameWaiter limit = null;
 		
-		   Utils.Dbg("FingerPrints: %d Waiters:%d",fingerPrints_.size(), waiters_.size());
+		   //Utils.Dbg("FingerPrints: %d Waiters:%d",fingerPrints_.size(), waiters_.size());
 			for (FingerPrintWrapper fpw: fingerPrints_)
 			{
 				double x = dtw_.measure(fpw.fp.Get(0), mfcc);
@@ -112,7 +112,6 @@ public class Summator implements Catcher, Loader.Processor {
 						{
 							fpw.maxed = true;
 							FrameWaiter fw = new FrameWaiter(fpw.fp, time_, 1);
-							//Utils.Dbg("%d| ADD: %s[%d]  %d / %f",time_, fpw.fp.Id(),0, 0, fpw.last);
 							if (limit == null)
 							{
 								limit = fw;

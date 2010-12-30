@@ -125,6 +125,7 @@ public class Loader implements Runnable {
 	{
 		load();
 		thread_ = new Thread(this);
+		thread_.setDaemon(true);
 		thread_.start();		
 	}
 

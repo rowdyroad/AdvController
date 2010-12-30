@@ -46,13 +46,13 @@ public class MFCC
   protected boolean useFirstCoefficient;
 
   //implementation details
-  private double[] buffer;
+  private float[] buffer;
   private Matrix dctMatrix;
   private Matrix melFilterBanks;
   private FFT normalizedPowerFFT;
-  private double scale;
+  private float scale;
   private int fftSize;
-  private double[] ret;
+  private float[] ret;
   private static double log10 = 10 * (1 / Math.log(10)); // log for base 10 and scale by factor 10
 
   /**
@@ -155,7 +155,7 @@ public class MFCC
     this.numberFilters = numberFilters;
 
     //create buffers
-    buffer = new double[windowSize];
+    buffer = new float[windowSize];
     fftSize = windowSize / 2;
    
     
@@ -164,13 +164,13 @@ public class MFCC
     melFilterBanks = getMelFilterBanks();
     dctMatrix = getDCTMatrix();
 
-    ret = new double[melFilterBanks.getRowDimension()];
+    ret = new float[melFilterBanks.getRowDimension()];
 
     //create power fft object
     normalizedPowerFFT = new FFT(FFT.FFT_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
     
     //compute rescale factor to rescale and normalize at once (default is 96dB = 2^16)
-    scale = (Math.pow(10, 96 / 20));    
+    scale = (float) (Math.pow(10, 96 / 20));    
   }
 
 
@@ -395,7 +395,7 @@ public class MFCC
    * @throws IOException if there are any problems regarding the inputstream
    * @throws IllegalArgumentException raised if method contract is violated
    */
-  public double[][] process(double[] input) throws IllegalArgumentException, IOException
+  public  float[][] process( float[] input) throws IllegalArgumentException, IOException
   {
     //check for null
     if(input == null)
@@ -406,7 +406,7 @@ public class MFCC
         throw new IllegalArgumentException("Input data must be multiple of hop size (windowSize/2).");
 
     //create return array with appropriate size
-    double[][] mfcc = new double[(input.length/hopSize)-1][numberCoefficients];
+    float[][] mfcc = new  float[(input.length/hopSize)-1][numberCoefficients];
 
     //process each window of this audio segment
     for(int i = 0, pos = 0; pos < input.length - hopSize; i++, pos+=hopSize)
@@ -428,7 +428,7 @@ public class MFCC
 
 
  
-  public double[] processWindow(double[] window, int start)
+  public  float[] processWindow( float[] window, int start)
   {
 	  if(start < 0)
 	      throw new IllegalArgumentException("start must be a positve value");
@@ -458,11 +458,11 @@ public class MFCC
 		  }
 		  else
 		  {
-			  ret[i] = log10 * Math.log(ret[i]);
+			  ret[i] = (float) (log10 * Math.log(ret[i]));
 		  }
 	  }
-	  
-	  double [] result =  new double[dctMatrix.getRowDimension()];
+
+	  float [] result =  new  float[dctMatrix.getRowDimension()];
 	  for (int i = 0; i < result.length; ++i)
 	  {
 		  result[i] = 0;
