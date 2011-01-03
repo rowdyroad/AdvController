@@ -68,7 +68,7 @@ public class Summator implements Catcher, Loader.Processor {
 	}
 	//static private int fw_id_ = 0;
 
-	private DTW dtw_ = new DTW();
+	private DTW dtw_ ;
 	private Settings settings_ = null;
 	private long time_  =  0; 
 	private LinkedList<FrameWaiter> waiters_ = new LinkedList<FrameWaiter>();	
@@ -79,6 +79,7 @@ public class Summator implements Catcher, Loader.Processor {
 	{
 		settings_ = settings;
 		resulter_ = resulter;
+		dtw_  = new DTW(15);
 	}
 
 	@Override
@@ -93,6 +94,7 @@ public class Summator implements Catcher, Loader.Processor {
 		fingerPrints_.remove(new FingerPrintWrapper(fp));
 	} 
 	
+	private List<FrameWaiter> removes_ = new LinkedList<FrameWaiter>();
 	@Override
 	public boolean OnReceived(float[][] mfcc, long timeoffset) 
 	{
@@ -102,10 +104,12 @@ public class Summator implements Catcher, Loader.Processor {
 			for (FingerPrintWrapper fpw: fingerPrints_)
 			{
 				double x = dtw_.measure(fpw.fp.Get(0), mfcc);
+				
 				if ( x > 0.1 )
 				{
 					double diff = x - fpw.last;
-					//Utils.Dbg("%d| %s add to waiter",time_ , fpw.fp.Id());
+//					Utils.Dbg("x:%f",x);
+					
 					if (diff  <  0)
 					{
 						if (!fpw.maxed)
@@ -129,7 +133,7 @@ public class Summator implements Catcher, Loader.Processor {
 				}
 			}
 		
-		List<FrameWaiter> removes = new LinkedList<FrameWaiter>();
+		removes_.clear();
 		
 		for (FrameWaiter fw: waiters_)
 		{
@@ -140,14 +144,14 @@ public class Summator implements Catcher, Loader.Processor {
 			
 			if (time_ > fw.time  + fw.fp.Time()) 
 			{				
-				removes.add(fw);
+				removes_.add(fw);
 				continue;
 			}
 			
 			if (time_ >= fw.offset_begin && time_<=fw.offset_end)
 			{	
 				double x = dtw_.measure(fw.fp.Get(fw.index), mfcc);
-				//Utils.Dbg("%d | %s[%d]  offset_begin:%d offset_end:%d /%f", time_, fw.fp.Id(), 0,fw.offset_begin, fw.offset_end, x);
+				
 				if (x > fw.max_offset)
 				{
 					fw.maxed_time  = time_;
@@ -166,8 +170,7 @@ public class Summator implements Catcher, Loader.Processor {
 						{
 							if (resulter_.OnFound(fw.fp.Id(), System.currentTimeMillis() / 1000))
 							{
-								removes.addAll(waiters_);
-								Runtime.getRuntime().gc();
+								removes_.addAll(waiters_);
 								break;
 							}
 						}
@@ -175,13 +178,13 @@ public class Summator implements Catcher, Loader.Processor {
 					else
 					{
 						//Utils.Dbg("%d| %s[%d] NOTMATCH:  index:%d/%f", time_, fw.fp.Id(), 0,fw.index, fw.max_offset);
-						removes.add(fw);
+						removes_.add(fw);
 					}
 				}
 			}
 		}
 		
-		waiters_.removeAll(removes);
+		waiters_.removeAll(removes_);
 		time_+=timeoffset;
 		return true;
 	}

@@ -1,4 +1,4 @@
-package util.math;
+package Calculation.math;
 
 /** Eigenvalues and eigenvectors of a real matrix.
 <P>

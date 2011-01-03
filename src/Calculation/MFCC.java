@@ -1,7 +1,9 @@
-package util;
+package Calculation;
 
 import java.io.IOException;
-import util.math.Matrix;
+
+import Calculation.math.Matrix;
+import Common.Utils;
 
 /**
  * <b>Mel Frequency Cepstrum Coefficients - MFCCs</b>
@@ -54,7 +56,8 @@ public class MFCC
   private int fftSize;
   private float[] ret;
   private static double log10 = 10 * (1 / Math.log(10)); // log for base 10 and scale by factor 10
-
+ 
+  
   /**
    * Creates a new MFCC object with default window size of 512 for the given
    * sample rate. The overlap of the windows is fixed at 50 percent. The number
@@ -69,8 +72,7 @@ public class MFCC
   {
     this(sampleRate, 512, 20, true, 20.0, 16000.0, 40);
   }
-
-
+ 
   /**
    * Creates a new MFCC object. 40 mel-filters are place in the range from 20 to
    * 16000 Hz.
@@ -107,7 +109,6 @@ public class MFCC
    * @param numberFilters int number of mel-filters to place in the interval
    * @throws IllegalArgumentException raised if method contract is violated
    */
-  
   public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, double minFreq, double maxFreq, int numberFilters) throws IllegalArgumentException
   {
     //check for correct window size
@@ -443,13 +444,14 @@ public class MFCC
 
 	  //perform power fft
 	  normalizedPowerFFT.transform(buffer, null);
-	  	    
+
+	  float [] result =  new  float[dctMatrix.getRowDimension()];
 	  for (int i = 0; i < ret.length; ++i)
 	  {
 		  ret[i] = 0;
 		  for (int j =0; j < fftSize; ++j)
 		  {
-			ret[i] += melFilterBanks.get(i, j) * buffer[j];
+			  ret[i] += melFilterBanks.get(i, j) * buffer[j];
 		  }
 		  
 		  if (ret[i] < 1)
@@ -461,8 +463,7 @@ public class MFCC
 			  ret[i] = (float) (log10 * Math.log(ret[i]));
 		  }
 	  }
-
-	  float [] result =  new  float[dctMatrix.getRowDimension()];
+	  
 	  for (int i = 0; i < result.length; ++i)
 	  {
 		  result[i] = 0;

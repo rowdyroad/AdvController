@@ -2,7 +2,6 @@ package Streamer;
 
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 
 import javax.sound.sampled.AudioFormat;
@@ -26,7 +25,7 @@ public class Streamer
 	
 	public Streamer() throws Exception
 	{
-		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);
+		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16, Config.Instance().Channels(), true, false);
 		settings_ = new Settings(format);
 		loader_ = new Loader(Config.Instance().PromosPath());
 
@@ -65,7 +64,7 @@ public class Streamer
 			};
 			
 			
-			if (stream.available() == 0)
+			if (!Config.Instance().IgnoreEmptyStream() && stream.available() == 0)
 			{
 				throw new Exception("Nothing to read at the start of streamer");
 			}

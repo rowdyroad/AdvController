@@ -1,6 +1,6 @@
 package Calibrator;
 
-import util.FFT;
+import Calculation.FFT;
 import Common.Source;
 import Common.Utils;
 

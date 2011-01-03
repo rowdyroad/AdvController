@@ -9,8 +9,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Vector;
 
-import util.math.Matrix;
+import Streamer.DTW;
 
+
+import Calculation.math.Matrix;
 import Common.Overlapper;
 import Common.Utils;
 
@@ -189,7 +191,7 @@ public class Main {
 	
 	public static void testOver()
 	{
-		double[]  d = {1,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,0,1,2,4,5,6,7,9,1,2,3,4,6,7,8,9,0};
+	/*	double[]  d = {1,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,0,1,2,4,5,6,7,9,1,2,3,4,6,7,8,9,0};
 		
 		Overlapper ov = new Overlapper(10, 4);
 		
@@ -218,7 +220,7 @@ public class Main {
 			}
 			  System.out.println();
 		}
-		
+		*/
 	}
 	
 	
@@ -242,15 +244,27 @@ public class Main {
 		}
 	}
 	
+	
+	private static void DTWTest()
+	{
+		DTW dtw = new DTW(3);
+		
+		float[][] a = { {0,1,1},{2,3,3}, {0,1,1}};
+		float[][] b = { {0,1,1},{2,3,3}, {0,1,1}};
+		
+		Utils.Dbg(dtw.measure(a,b));
+	}
+	
 	public static void main (String args [])
 	{
-		
+		DTWTest();
+		/*
 		for (int i = 0; i < 1000; ++i)
 		{
 			Memory(i);
 			Circle(i);
 		}
-			
+			*/
 		//testOver();
 		/*Vector<Double> d = new Vector<Double>();
 		

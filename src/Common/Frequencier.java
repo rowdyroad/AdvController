@@ -18,13 +18,13 @@ public class Frequencier implements Source.AudioReceiver {
 	{
 		catcher_ = catcher;
 		settings_  = settings;
-		mfcc_ = new util.MFCC(settings_.SampleRate(),8192, 20,false,min_frequency,max_frequency,40);
+		mfcc_ = new Calculation.MFCC(settings_.SampleRate(),8192, 20,false,min_frequency,max_frequency,40);
 		overlap_length_ = overlapLength;
 		over =   new Overlapper(65536, overlap_length_);
 	}
 	
 
-	private util.MFCC mfcc_;
+	private Calculation.MFCC mfcc_;
 	Overlapper over;
 	
 	@Override

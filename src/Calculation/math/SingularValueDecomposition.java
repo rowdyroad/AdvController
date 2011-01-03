@@ -1,4 +1,4 @@
-package util.math;
+package Calculation.math;
 
    /** Singular Value Decomposition.
    <P>

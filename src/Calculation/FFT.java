@@ -1,4 +1,4 @@
-package util;
+package Calculation;
 
 import Common.Utils;
 
@@ -96,7 +96,7 @@ public final class FFT
 
     if(windowFunction.length != windowSize)
     {
-      throw new IllegalArgumentException("size of window function match window size");
+      throw new IllegalArgumentException("Data array is smaller than FFT window size");
     }
     else
     {
@@ -109,37 +109,25 @@ public final class FFT
 
   public void transform( float[] re,  float[] im)
   {
-    //check for correct size of the real part data array
     if(re.length < windowSize)
-      throw new IllegalArgumentException("data array smaller than fft window size");
-
-    //apply the window function to the real part
+      throw new IllegalArgumentException("Data array is smaller than FFT window size");
     applyWindowFunction(re);
-
-    //perform the transformation
     switch(transformationType)
     {
       case FFT_FORWARD:
-        //check for correct size of the imaginary part data array
         if(im.length < windowSize)
-          throw new IllegalArgumentException("data array smaller than fft window size");
+          throw new IllegalArgumentException("Data array is smaller than FFT window size");
         else
-          fft(re, im, FFT_FORWARD);
-        break;
-      case FFT_INLINE_POWER_PHASE:
-        if(im.length < windowSize)
-          throw new IllegalArgumentException("data array smaller than fft window size");
-        else
-          powerPhaseIFFT(re, im);
+          fft(re, im);
         break;
       case FFT_MAGNITUDE:
-  //      magnitudeFFT(re);
+    	  magnitudeFFT(re);
         break;
       case FFT_MAGNITUDE_PHASE:
         if(im.length < windowSize)
-          throw new IllegalArgumentException("data array smaller than fft window size");
+          throw new IllegalArgumentException("Data array is smaller than FFT window size");
         else
-      //    magnitudePhaseFFT(re, im);
+         magnitudePhaseFFT(re, im);
         break;
       case FFT_NORMALIZED_POWER:
         normalizedPowerFFT(re);
@@ -149,20 +137,14 @@ public final class FFT
         break;
       case FFT_POWER_PHASE:
         if(im.length < windowSize)
-          throw new IllegalArgumentException("data array smaller than fft window size");
+          throw new IllegalArgumentException("Data array is smaller than FFT window size");
         else
-        //  powerPhaseFFT(re, im);
-        break;
-      case FFT_REVERSE:
-        if(im.length < windowSize)
-          throw new IllegalArgumentException("data array smaller than fft window size");
-        else
-          fft(re, im, FFT_REVERSE);
+          powerPhaseFFT(re, im);
         break;
     }
   }
   
-  private void fft( float re[],  float im[], int direction)
+  private void fft( float re[],  float im[])
   {
 		int n = re.length;
 		int last = n - 1;
@@ -214,7 +196,7 @@ public final class FFT
   {
 		 float[] im = new  float[re.length];
 
-		fft(re, im, FFT_FORWARD);
+		fft(re, im);
 
 		for (int i = 0; i < re.length; i++)
 			re[i] = re[i] * re[i] + im[i] * im[i];
@@ -228,7 +210,7 @@ public final class FFT
   {
 	  float[] im = new  float[re.length];
 
-    fft(re, im, FFT_FORWARD);
+    fft(re, im);
 
     for (int i = 0; i < re.length; i++)
       re[i] = (float) Math.sqrt(re[i] * re[i] + im[i] * im[i]);
@@ -243,7 +225,7 @@ public final class FFT
 	  float[] im = new  float[re.length];
     double r, i;
 
-    fft(re, im, FFT_FORWARD);
+    fft(re, im);
 
     for (int j = 0; j < re.length; j++)
     {
@@ -276,7 +258,7 @@ public final class FFT
 	 */
 	private void powerPhaseFFT( float[] re,  float[] im)
   {
-		fft(re, im, FFT_FORWARD);
+		fft(re, im);
 
 		for (int i = 0; i < re.length; i++)
     {
@@ -285,30 +267,6 @@ public final class FFT
 			re[i] = pow;
 		}
 	}
-
-
-	/** Inline computation of the inverse FFT given spectral input data
-	 *  in polar coordinates (power and phase).
-	 *  Both arrays must be the same length, which is a power of 2.
-	 *  @param pow the power of the spectral input data (and real part of the
-	 *  output data)
-	 *  @param ph the phase of the spectral input data (and the imaginary part
-	 *  of the output data)
-	 */
-	private void powerPhaseIFFT( float[] pow,  float[] ph)
-  {
-		toMagnitude(pow);
-
-		for (int i = 0; i < pow.length; i++)
-    {
-			 float re = (float) (pow[i] * Math.cos(ph[i]));
-			ph[i] = (float) (pow[i] * Math.sin(ph[i]));
-			pow[i] = re;
-		}
-
-		fft(pow, ph, FFT_REVERSE);
-	}
-
 
 	/** Computes a complex (or real if im[] == {0,...}) FFT and converts
 	 *  the results to polar coordinates (magnitude and phase). Both arrays
