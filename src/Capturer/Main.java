@@ -23,6 +23,7 @@ public class Main {
 		{
 			usage();
 		}
+		
 		Common.Config.Arguments = new Args(args);
 		Dbg.LogLevel = Common.Config.Instance().LogLevel();
 		

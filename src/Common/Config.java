@@ -1,9 +1,8 @@
 package Common;
 
-public class Config {
+public  class Config {
 	
 	private int log_level_ = Dbg.Error | Dbg.Warning | Dbg.Info;
-	private int overlapped_coef_ = 4;
 	private float noise_gate_ = 0;
 	private float kill_gate_ = 0;
 	private static Config instance_ = null;
@@ -31,8 +30,7 @@ public class Config {
 		if (arg == null) return;
 		try
 		{
-		      overlapped_coef_ = arg.Get("o", overlapped_coef_);		 
-		      buffer_count_ = arg.Get("b",buffer_count_);
+			      buffer_count_ = arg.Get("b",buffer_count_);
 			  noise_gate_ = Float.parseFloat(arg.Get("ng",String.valueOf(noise_gate_)));
 			  kill_gate_  =  Float.parseFloat(arg.Get("kg",String.valueOf(noise_gate_)));
 			  log_level_ = arg.Get("L", log_level_);
@@ -66,10 +64,6 @@ public class Config {
 		return kill_gate_;
 	}
 	
-	public int OverlappedCoef()
-	{
-		return overlapped_coef_;
-	}
 	
 	public int LogLevel()
 	{

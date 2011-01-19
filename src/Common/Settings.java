@@ -5,7 +5,6 @@ import javax.sound.sampled.AudioFormat.Encoding;
 
 public class Settings 
 {
-	private int overlapped_length_;
 	private int sample_rate_;
 	private int channels_;
 	private int sample_size_;
@@ -21,7 +20,6 @@ public class Settings
 		sample_size_ = format.getSampleSizeInBits() / 8;
 		is_big_endian_ = format.isBigEndian();
 		window_size_ = Utils.GreaterBinary(sample_rate_ );
-		overlapped_length_ = window_size_ / Common.Config.Instance().OverlappedCoef();
 		Dbg.Info(this);
 	}
 	
@@ -45,11 +43,7 @@ public class Settings
 		return sample_rate_ ;
 	}
 	
-	public Integer OverlappedLength()
-	{
-		return overlapped_length_;
-	}
-	
+
 
 	public Integer WindowSize()
 	{
@@ -59,8 +53,8 @@ public class Settings
 	@Override
 	public String toString()
 	{
-		return String.format("SampleRate:%d\nChannels:%d\nEcoding:%s\nSampleSize:%d\nIsBigEndian:%b\nWindowSize:%d\nOverlappedLength:%d\n",
-									   sample_rate_ ,channels_,encoding_, sample_size_,is_big_endian_ ,window_size_,overlapped_length_);
+		return String.format("SampleRate:%d\nChannels:%d\nEcoding:%s\nSampleSize:%d\nIsBigEndian:%b\nWindowSize:%d\n",
+									   sample_rate_ ,channels_,encoding_, sample_size_,is_big_endian_ ,window_size_);
 		
 	}
 

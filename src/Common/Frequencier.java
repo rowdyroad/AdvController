@@ -23,7 +23,7 @@ public class Frequencier implements Source.AudioReceiver {
 																		settings_.SampleRate(), 
 																		Common.Config.Instance().FFTWindowSize(), 20, false, min_frequency, max_frequency, 40);
 		overlap_length_ = overlapLength;
-		over =   new Overlapper(65536, overlap_length_);
+		over =   new Overlapper(settings.WindowSize(), overlap_length_);
 	}
 	
 
@@ -35,7 +35,7 @@ public class Frequencier implements Source.AudioReceiver {
 	{
 		if (db == null)
 		{
-			catcher_.OnIgnore(65535);
+			catcher_.OnIgnore(settings_.WindowSize());
 			return;
 		}
 		

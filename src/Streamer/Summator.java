@@ -45,6 +45,7 @@ public class Summator implements Catcher, Loader.Processor {
 		List<Float> lasts = new LinkedList<Float>();
 		int index;
 		float total;
+		int timestamp;
 		//int id;
 		FingerPrintWrapper fpw;
 		public FrameWaiter(FingerPrintWrapper fpw, long time, int index, float equip)
@@ -56,6 +57,7 @@ public class Summator implements Catcher, Loader.Processor {
 			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 8;
 			this.index = index;
 			this.total = equip;
+			this.timestamp = (int) (System.currentTimeMillis() / 1000);
 			//Utils.Dbg("%d, offsets:%d  %d (%d) %d  %d",off, this.offset.get(0),this.offset.get(1),this.offset.get(2),this.offset.get(3),this.offset.get(4));
 		}
 		
@@ -67,6 +69,7 @@ public class Summator implements Catcher, Loader.Processor {
 			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 8;
 			this.index = 1;
 			this.total = equip;
+			this.timestamp = (int) (System.currentTimeMillis() / 1000);
 		}
 		
 		public void Next(long time, float equip)
@@ -109,7 +112,22 @@ public class Summator implements Catcher, Loader.Processor {
 	
 	private List<FrameWaiter> removes_ = new LinkedList<FrameWaiter>();
 	
-	
+	private void DbgMFCC(float[][] mfcc)
+	{
+	String str = new String();
+					
+			for (int j = 0; j < mfcc.length; ++ j)
+			{
+				str+="";
+				for (int k = 0; k <  mfcc[j].length; ++k)
+				{
+					str+=String.format("%.03f\t",  mfcc[j][k]);
+				}
+				str+="\n";
+			}
+			
+		Dbg.Debug(str);
+	}
 	
 	@Override
 	public boolean OnReceived(float[][] mfcc, long timeoffset) 
@@ -117,17 +135,20 @@ public class Summator implements Catcher, Loader.Processor {
 		FrameWaiter limit = null;		
 		// Utils.Dbg("FingerPrints: %d Waiters:%d",fingerPrints_.size(), waiters_.size());
 		
+		//DbgMFCC(mfcc);
 		LinkedList<FingerPrintWrapper>  maxs = new LinkedList<FingerPrintWrapper>();
 		float max = 0;
 		FingerPrintWrapper max_fpw = null;
 		for (FingerPrintWrapper fpw: fingerPrints_)
 		{
 			float x = dtw_.measure(fpw.fp.Get(0), mfcc);	
+			
 			if ( x >  0.1 )
 			{
+				Dbg.Debug(x);
 				if ( x   <  fpw.last )
 				{
-					Dbg.Debug("%d | %s  add to waiters: %.03f", time_, fpw.fp.Id(), x);							
+					Dbg.Debug("%d | %s  add: %.03f", time_, fpw.fp.Id(), x);							
 					FrameWaiter fw = new FrameWaiter(fpw, time_, 1, fpw.last);
 					if ( limit == null )
 					{
@@ -138,21 +159,11 @@ public class Summator implements Catcher, Loader.Processor {
 				fpw.last = x;
 			}
 		}
-
-		/*if (max_fpw != null)
-		{
-			Dbg.Debug("%d | %s  add to waiters: %.03f", time_, max_fpw.fp.Id(), max_fpw.last);							
-			
-			FrameWaiter fw = new FrameWaiter(max_fpw.fp, time_, 1);
-			waiters_.add(fw);	
-		}*/
 		
-		removes_.clear();
 		
-		String dbg  = "";
+		removes_.clear();		
 		for (FrameWaiter fw: waiters_)
 		{
-			
 			if ( fw == limit ) 
 			{
 				break;
@@ -178,38 +189,33 @@ public class Summator implements Catcher, Loader.Processor {
 			{
 				if (time_  > fw.offset_end)
 				{
-				//	Dbg.Debug("%d |  %s MATCH:  index:%d max:%f / %f",time_, fw.fp.Id(), fw.index, fw.last,fw.total);		
 					if (fw.last > 0.1)
 					{		
 						fw.Next(fw.maxed_time, fw.last);										
 						if ((double)fw.index / fw.fpw.fp.Frames() >= Config.Instance().FingerPrintEquivalency())
-						{
-
-											
+						{											
 								if (resulter_ != null)
 								{										
-										resulter_.OnFound(fw.fpw.fp.Id(), System.currentTimeMillis() / 1000,fw.total / fw.index);
-								}									
+										resulter_.OnFound(fw.fpw.fp.Id(), fw.timestamp,(int)(System.currentTimeMillis() / 1000), fw.total  / fw.index);
+								}
 								
+								float e = fw.total / fw.index;																
+								for(FrameWaiter fw_ : waiters_)
+								{
+									if (fw_.total / fw_.index < e)
+									{
+										removes_.add(fw_);
+									}									
+								}								
 								removes_.add(fw);
 						}
 					}
 					else
 					{
-						//Utils.Dbg("%d| %s[%d] NOTMATCH:  index:%d/%f", time_, fw.fp.Id(), 0,fw.index, fw.max_offset);
 						removes_.add(fw);
 					}
 				}
 			}
-		}
-				
-		if (! waiters_.isEmpty())
-		{
-			for(FrameWaiter fw: waiters_)
-			{
-				dbg+=String.format("%s | %.03f [%.03f / %d] \n", fw.fpw.fp.Id(), fw.total * fw.index,fw.total, fw.index);			
-			}
-			Dbg.Debug(dbg);
 		}
 		waiters_.removeAll(removes_);
 		time_+=timeoffset;
