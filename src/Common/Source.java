@@ -1,8 +1,8 @@
 package Common;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -81,7 +81,14 @@ public class Source implements Runnable {
 	private RingBuffer ring_buffer_ ;
 	private byte[] read_buffer_;
 	private byte[] process_buffer_;
+	private OutputStream out_;
+	
 	public Source(InputStream stream, Settings settings, int buffer_count)
+	{
+		this(stream,settings,buffer_count,null);
+	}
+	
+	public Source(InputStream stream, Settings settings, int buffer_count, OutputStream out)
 	{
 		stream_ = stream;
 		frame_size_ = settings.Channels() * settings.SampleSize();
@@ -90,6 +97,7 @@ public class Source implements Runnable {
 		process_buffer_ = new byte[read_chunk_size_];
 		ring_buffer_ = new RingBuffer(read_chunk_size_* buffer_count);
 		settings_ = settings;
+		out_ = out;
 	}
 
 
@@ -107,40 +115,57 @@ public class Source implements Runnable {
 	{
 		ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
 		buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
-		return ( float)buf.getShort() / Short.MAX_VALUE;
+		return Math.max((float) buf.getShort() / Short.MAX_VALUE - Config.Instance().NoiseGate(),0);
+		//final float res = 	Math.max((float) buf.getShort() / Short.MAX_VALUE - Config.Instance().KillGate(), 0);   ;
+		//return (res - Config.Instance().KillGate() <= 0) ? 0 : res;
 	} 
 
 	private void process(byte[] buf, int len)
 	{
-		 float[] left = new  float[settings_.WindowSize()];
-		 float[] right = new  float[settings_.WindowSize()];
-		int j = 0;	
+		float[] left = new  float[settings_.WindowSize()];
+		float[] right = new  float[settings_.WindowSize()];
+		int j = 0;
+		
+		float max_left = 0;
+		float  max_right = 0;
+		
+		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
+		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
+		
 		for (int i = 0; i < len - frame_size_; i+=frame_size_, j++)
 		{
 			if (settings_.Channels() == 2)
 			{
-				left[j] = convertFromAr(buf, i, i + 1);
-				right[j] = convertFromAr(buf, i + 2, i + 3);
+				if (left_recv != null)
+				{
+					left[j] = convertFromAr(buf, i, i + 1);
+				}
+				
+				if (right_recv != null)
+				{
+					right[j] = convertFromAr(buf, i + 2, i + 3);
+				}
 			}
 			else
-			{
+			{	
 				left[j] = right[j] = convertFromAr(buf, i, i + 1);
 			}
+			
+			max_left = Math.max(max_left, left[j]);
+			max_right = Math.max(max_right, right[j]);
 		}
 		
 		for (int i =j; i< settings_.WindowSize() ; ++i)
-		{
+		{			
 			left[i] = right[i] = 0;
 		}
 
-		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
-		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
-
 		if (left_recv != null)
 		{
+			
 			for (int i = 0; i < left_recv.size(); ++i)
 			{
-				left_recv.get(i).OnSamplesReceived(left);
+				left_recv.get(i).OnSamplesReceived(max_left  > Common.Config.Instance().KillGate() ? left : null);
 			}
 		}
 
@@ -148,7 +173,7 @@ public class Source implements Runnable {
 		{
 			for (int i = 0; i < right_recv.size(); ++i)
 			{
-				right_recv.get(i).OnSamplesReceived(right);
+				right_recv.get(i).OnSamplesReceived(max_right / settings_.WindowSize() > Common.Config.Instance().KillGate() ? right : null);
 			}
 		}
 	}
@@ -158,11 +183,12 @@ public class Source implements Runnable {
 	{
 		if (receivers_.isEmpty()) 
 		{
-			Utils.Dbg("There aren't any receivers has been registered");
+			Dbg.Warn("There aren't any receivers has been registered");
 			return;
 		}
 		
 		thread_ = new Thread(this);
+		thread_.setDaemon(true);
 		thread_.start();
 
 		while (true)
@@ -172,7 +198,7 @@ public class Source implements Runnable {
 					if (thread_.isAlive())
 					{
 						try {
-							wait();
+							wait(10000);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 							return;
@@ -189,54 +215,11 @@ public class Source implements Runnable {
 				
 				while (ring_buffer_.getAvailable() >= read_chunk_size_)
 				{
-					Utils.Dbg("Read:%d / %d", ring_buffer_.getAvailable(),read_chunk_size_);
+					Dbg.Debug("Read:%d / %d", ring_buffer_.getAvailable(),read_chunk_size_);
 					ring_buffer_.get(process_buffer_,0,read_chunk_size_);		
-					Utils.Dbg("Mod:%d",ring_buffer_.getAvailable());
+					Dbg.Debug("Mod:%d",ring_buffer_.getAvailable());
 					process(process_buffer_, read_chunk_size_);			
 				}
-				
-				/*while (! buffer_.isEmpty())
-				{				
-					Buffer buf = buffer_.get(0);
-					buffer_.remove(0);
-					if (buf == null)
-					{
-						if (cache_len_> 0) 
-						{
-							process(cache_, cache_len_);
-						}
-						return;	
-					}
-			
-					int ret = buf.length;
-					byte[] b = buf.buffer;
-					
-					readed+=ret;
-					if (ret < readChunkSize_ || cache_len_  > 0)
-					{
-						int len2cache = Math.min(readChunkSize_ - cache_len_, ret);
-						System.arraycopy(b, 0, cache_, cache_len_, len2cache);
-						cache_len_+= len2cache;
-						if (cache_len_ == readChunkSize_)
-						{
-							process(cache_,cache_len_);
-							if (len2cache < ret)
-							{
-								cache_len_ = ret - len2cache;
-								System.arraycopy(b,len2cache, cache_,0, cache_len_);
-							}
-							else
-							{
-								continue;
-							}
-						}
-					}
-					else
-					{
-						process(b,ret);
-						continue;
-					}
-				}*/
 		}
 	}
 
@@ -244,10 +227,7 @@ public class Source implements Runnable {
 	public InputStream Stream()
 	{
 		return stream_;
-	}
-
-
-	
+	}	
 	
 	@Override
 	public  void  run() 
@@ -255,44 +235,43 @@ public class Source implements Runnable {
 		while (true)
 		{
 				try 
-				{
-					
-					int ret = stream_.read(read_buffer_);
-					//Utils.Dbg("Read from in:%d",ret);
-					if (ret <= 0)
+				{					
+					int ret = stream_.read(read_buffer_);			
+					if (ret == -1)
 					{
-						Utils.Dbg("Nothing to read");
-						synchronized(this)
-						{
-							notify();
-							break;
-						}
-					}
+						Dbg.Info("Nothing to read");
+						break;
+					}										
 					if (ret > 0 )
 					{							
+						if (out_ != null)
+						{
+							out_.write(read_buffer_, 0, ret);
+						}						
 						ring_buffer_.put(read_buffer_, 0, ret);
 						if (ring_buffer_.getAvailable() >= read_chunk_size_  || ring_buffer_.putAvailable() < read_chunk_size_ )
 						{
-							Utils.Dbg("Write: %d / %d",ring_buffer_.getAvailable(), read_chunk_size_);
+				//			Utils.Dbg("Write: %d / %d",ring_buffer_.getAvailable(), read_chunk_size_);
 							synchronized(this)
 							{
 								notify();
-								Thread.yield();
 							}
 						}
 					}
 				} 
 			catch (IOException e) 
 			{
-				Utils.Dbg("EXCEPTION:%s",e.getMessage());
+				Dbg.Error("EXCEPTION:%s",e.getMessage());
 				e.printStackTrace();
-				synchronized(this)
-				{
-					notify();
-					break;
-				}
+				break;
 			}
 		}
+		
+		synchronized(this)
+		{
+			notify();
+		}
+
 	}
 
 }

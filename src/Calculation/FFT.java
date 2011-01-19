@@ -1,7 +1,5 @@
 package Calculation;
 
-import Common.Utils;
-
 public final class FFT
 {
 	public static final int FFT_FORWARD = -1;

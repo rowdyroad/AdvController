@@ -1,48 +1,50 @@
 package Common;
-import java.io.FileInputStream;
-import java.util.*;
 
 public class Config {
-	private int frequency_step_ = 10;
-	private int overlapped_coef_ = 4;
-	private int levels_count_= 20;
-	private int min_frequency_ = 20;
-	private int max_frequency_ = 10000;
-	private double noise_gate_ = 0.0005;
-	private static Config instance_ = null;
-	public static String Filename = "soas.ini";
-	private Properties properties_;
 	
+	private int log_level_ = Dbg.Error | Dbg.Warning | Dbg.Info;
+	private int overlapped_coef_ = 4;
+	private float noise_gate_ = 0;
+	private float kill_gate_ = 0;
+	private static Config instance_ = null;
+	public static Args Arguments = null;	
 	private int buffer_count_ = 100;
+	private int fft_window_size_ = 8192;
 	
 	static public Config Instance()
 	{
 		if (instance_ == null)
 		{
-			instance_ = new Config(Config.Filename);		
+			instance_ = new Config(Arguments);		
 		}
 		
 		return instance_;
 	}
 	
-	private Config(String filename)
+	private Config(Args arg)
 	{
-		Load(filename);
+		Set(arg);
 	}
 	
-	private void Load(String filename)
+	private void Set(Args  arg)
 	{
-		  try{
-		      Properties p = new Properties();
-		      properties_ = p;
-		      p.load(new FileInputStream(filename));
-		      frequency_step_ = Integer.decode(p.getProperty("frequency_step",String.valueOf(frequency_step_)));
-		      overlapped_coef_ = Integer.decode(p.getProperty("overlapped_coef",String.valueOf(overlapped_coef_)));
-		      levels_count_ = Integer.valueOf(p.getProperty("levels_count",String.valueOf(levels_count_)));
-		      buffer_count_ = Integer.valueOf(p.getProperty("buffer_count",String.valueOf(buffer_count_)));
-		      min_frequency_ = Integer.decode(p.getProperty("min_frequency",String.valueOf(min_frequency_)));
-		      max_frequency_ = Integer.decode(p.getProperty("max_frequency",String.valueOf(max_frequency_)));
-			  noise_gate_ = Double.parseDouble(p.getProperty("noise_gate",String.valueOf(noise_gate_)));
+		if (arg == null) return;
+		try
+		{
+		      overlapped_coef_ = arg.Get("o", overlapped_coef_);		 
+		      buffer_count_ = arg.Get("b",buffer_count_);
+			  noise_gate_ = Float.parseFloat(arg.Get("ng",String.valueOf(noise_gate_)));
+			  kill_gate_  =  Float.parseFloat(arg.Get("kg",String.valueOf(noise_gate_)));
+			  log_level_ = arg.Get("L", log_level_);
+			  if (noise_gate_ != 0)
+			  {
+				  noise_gate_ = (float) Math.pow(10,  noise_gate_ / 20 );  
+			  }
+			  
+			  if (kill_gate_ != 0)
+			  {
+				  kill_gate_ = (float) Math.pow(10,  kill_gate_ / 20 );  
+			  }			  
 		  }
 		 catch (Exception e) 
 		 {
@@ -55,15 +57,13 @@ public class Config {
 		return buffer_count_;
 		
 	}
-	public double NoiseGate()
+	public float NoiseGate()
 	{
 		return noise_gate_;
 	}
-
-	
-	public int FrequencyStep()
+	public float KillGate()
 	{
-		return frequency_step_;
+		return kill_gate_;
 	}
 	
 	public int OverlappedCoef()
@@ -71,23 +71,24 @@ public class Config {
 		return overlapped_coef_;
 	}
 	
-	
-	public int LevelsCount()
+	public int LogLevel()
 	{
-		return levels_count_;
+		return log_level_;
 	}
 	
-	public int MinFrequency()
+	public int FFTWindowSize()
 	{
-		return min_frequency_;
-	}
-	public int MaxFrequency()
-	{
-		return max_frequency_;
+		return fft_window_size_;
 	}
 	
 	public String GetProperty(String name, String def)
 	{
-		return (properties_!=null) ? properties_.getProperty(name,def) : def;
+		return (Arguments !=null) ? Arguments.Get(name,def) : def;
+	}
+	
+	public int GetProperty(String name, int def)
+	{
+		return (Arguments !=null) ? Arguments.Get(name,def) : def;
 	}
 }
+

@@ -1,6 +1,7 @@
 package Calibrator;
 
 import Calculation.FFT;
+import Common.Dbg;
 import Common.Source;
 import Common.Utils;
 
@@ -12,24 +13,22 @@ public class FrequencyCalibrator extends Calibrator
 	private static   int  WINDOW_SIZE = 8192;
 	private int begin_;
 	private int end_;
-	private double [] data_ = new double[WINDOW_SIZE];
+	private float [] data_ = new float[WINDOW_SIZE];
 	
 	public FrequencyCalibrator(Source source) {
 		super(source);
-		Utils.Dbg("Frequency Calibration");
+		Dbg.Info("Frequency Calibration");
 		fft_ = new  FFT(FFT.FFT_POWER, WINDOW_SIZE, FFT.WND_BLACKMAN_NUTTALL);
-		begin_ = (int)Math.round(20 * WINDOW_SIZE / (double)source_.GetSettings().SampleRate());
-		end_ = (int)Math.round(20000 * WINDOW_SIZE / (double)source_.GetSettings().SampleRate());
+		begin_ = (int)Math.round(Common.Config.Instance().GetProperty("f",20) * WINDOW_SIZE / (double)source_.GetSettings().SampleRate());
+		end_ = (int)Math.round(Common.Config.Instance().GetProperty("F",20000) * WINDOW_SIZE / (double)source_.GetSettings().SampleRate());
 	}
 
 	@Override
-	public void OnSamplesReceived(double[] db) {
+	public void OnSamplesReceived(float[] db) {
 		// TODO Auto-generated method stub
 		int index = 0;
-	
 		while (db.length - index >= WINDOW_SIZE)
-		{
-			
+		{			
 			System.arraycopy(db,index,data_, 0, WINDOW_SIZE);
 			index+=WINDOW_SIZE;
 			fft_.transform(data_,null);		
@@ -54,15 +53,15 @@ public class FrequencyCalibrator extends Calibrator
 			int freq = (int)(Math.round((double)source_.GetSettings().SampleRate() / data_.length * max_index));
 			min_frequency_ = Math.min(min_frequency_, freq);
 			max_frequency_ = Math.max(max_frequency_, freq);
-			Utils.Dbg("%d - %f  / %d %d [%f]",freq,max,min_frequency_,max_frequency_,db_max);
-
+			Dbg.Debug("%d - %f  / %d %d [%f]",freq,max,min_frequency_,max_frequency_,db_max);
 		}
 	}
 
 	@Override
-	void OnComplete() {
+	void OnComplete() 
+	{
 		// TODO Auto-generated method stub
-		Utils.Dbg("frequency: %d - %d",min_frequency_,max_frequency_);
+		Dbg.Info("frequency: %d - %d",min_frequency_,max_frequency_);
 	}
 
 }

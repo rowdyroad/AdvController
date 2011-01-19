@@ -3,7 +3,6 @@ package Calculation;
 import java.io.IOException;
 
 import Calculation.math.Matrix;
-import Common.Utils;
 
 /**
  * <b>Mel Frequency Cepstrum Coefficients - MFCCs</b>

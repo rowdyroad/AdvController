@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import Common.Dbg;
 import Common.FingerPrint;
 import Common.Utils;
 
@@ -57,7 +58,8 @@ public class Loader implements Runnable {
 				{
 					p.RemoveFingerPrint(kvp.getValue());
 				}
-				Utils.Dbg("\tRemove %s",kvp.getKey());
+				
+				Dbg.Info("\tRemove %s",kvp.getKey());
 				it.remove();
 			}
 		}
@@ -65,10 +67,14 @@ public class Loader implements Runnable {
 	
 	private void load()
 	{
-		File[] dirs  = new File(directory_).listFiles();
-		for (File dir : dirs)
+		for (String key : processors_.keySet())
 		{
-			if (! dir.isDirectory()) continue;
+			File dir = new File(directory_+"/"+key);
+			if (dir == null || !dir.exists() || !dir.isDirectory())
+			{
+				//Utils.Dbg("Couldn't load files from %s",key);
+				continue;
+			}
 			
 			TreeMap<String,FingerPrint> fps  = data_.get(dir.getName());
 			
@@ -77,9 +83,7 @@ public class Loader implements Runnable {
 				fps = new TreeMap<String,FingerPrint>(); 
 				data_.put(dir.getName(),fps);
 			}
-				
-	//		Utils.Dbg("Checking %s...",dir.getName());
-
+			
 			File[] files = dir.listFiles();
 			removeOld(dir.getName(), fps, files);
 			for (File file : files)
@@ -88,10 +92,10 @@ public class Loader implements Runnable {
 					FingerPrint fp = fps.get(file.getName());
 					if (fp == null)
 					{
-						Utils.Dbg("Loading  %s..",file.getName());
+						Dbg.Debug("Loading  %s..",file.getName());
 						FingerPrint nfp = FingerPrint.Deserialize(file);
 						fps.put(file.getName(), nfp);
-						Utils.Dbg("Loaded %s\n",nfp.Id());
+						Dbg.Debug("Loaded %s\n",nfp.Id());
 
 						LinkedList<Processor> ps = processors_.get(dir.getName());
 						if (ps != null)

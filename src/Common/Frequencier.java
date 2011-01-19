@@ -6,6 +6,7 @@ public class Frequencier implements Source.AudioReceiver {
 	public interface Catcher
 	{
 		public boolean OnReceived(float[][]  mfcc, long timeoffset);
+		public void OnIgnore(long timeoffset);
 		public void OnError();
 	}
 	
@@ -18,7 +19,9 @@ public class Frequencier implements Source.AudioReceiver {
 	{
 		catcher_ = catcher;
 		settings_  = settings;
-		mfcc_ = new Calculation.MFCC(settings_.SampleRate(),8192, 20,false,min_frequency,max_frequency,40);
+		mfcc_ = new Calculation.MFCC(
+																		settings_.SampleRate(), 
+																		Common.Config.Instance().FFTWindowSize(), 20, false, min_frequency, max_frequency, 40);
 		overlap_length_ = overlapLength;
 		over =   new Overlapper(65536, overlap_length_);
 	}
@@ -30,6 +33,12 @@ public class Frequencier implements Source.AudioReceiver {
 	@Override
 	public void OnSamplesReceived( float[] db) 
 	{
+		if (db == null)
+		{
+			catcher_.OnIgnore(65535);
+			return;
+		}
+		
 		try 
 		{
 			while (true)

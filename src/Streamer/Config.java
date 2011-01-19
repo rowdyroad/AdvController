@@ -16,7 +16,7 @@ public class Config {
 	}
 	
 	private String external_program_ = new String();
-	private double fingerprint_equivalency_ = 0.6 ;
+	private double fingerprint_equivalency_ = 1 ;
 	private String promos_path_;
 	private String source_;
 	private int sample_rate_ = 44100;
@@ -25,30 +25,43 @@ public class Config {
 	private int left_max_frequency_ = 20000;
 	private int right_min_frequency_ = 20;
 	private int right_max_frequency_ = 20000;
+	private String left_key_;
+	private String right_key_;
 	private boolean ignore_empty_stream_ = false;
 	
 	private Config()
 	{
 		try
 		{
-			external_program_ = Common.Config.Instance().GetProperty("external_program", "");
-			sample_rate_ = Integer.parseInt(Common.Config.Instance().GetProperty("sample_rate", Integer.toString(sample_rate_)));
-			channels_ = Integer.parseInt(Common.Config.Instance().GetProperty("channels", Integer.toString(channels_)));
-			
-			source_ = Common.Config.Instance().GetProperty("source","soundcard");
-			promos_path_ = Common.Config.Instance().GetProperty("storage", ".");
+			external_program_ = Common.Config.Instance().GetProperty("ep", "");
+			sample_rate_ = Integer.parseInt(Common.Config.Instance().GetProperty("sr", Integer.toString(sample_rate_)));
+			channels_ = Integer.parseInt(Common.Config.Instance().GetProperty("cc", Integer.toString(channels_)));			
+			source_ = Common.Config.Instance().GetProperty("s","soundcard");
+			promos_path_ = Common.Config.Instance().GetProperty("st", ".");
 			promos_path_ = (promos_path_.isEmpty()) ? "./" : Utils.CompletePath(promos_path_);
-			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("equivalency", Double.toString(fingerprint_equivalency_)));
-			left_min_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("left_min_frequency", Integer.toString(left_min_frequency_)));
-			left_max_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("left_max_frequency", Integer.toString(left_max_frequency_)));
-			right_min_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("right_min_frequency", Integer.toString(right_min_frequency_)));
-			right_max_frequency_ = Integer.parseInt(Common.Config.Instance().GetProperty("right_max_frequency", Integer.toString(right_max_frequency_)));
-			ignore_empty_stream_ = Boolean.parseBoolean(Common.Config.Instance().GetProperty("ignore_empty_stream", Boolean.toString(ignore_empty_stream_)));
+			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("e", Double.toString(fingerprint_equivalency_)));
+			left_min_frequency_ = Common.Config.Instance().GetProperty("lf", left_min_frequency_);
+			left_max_frequency_ = Common.Config.Instance().GetProperty("LF", left_max_frequency_);
+			right_min_frequency_ = Common.Config.Instance().GetProperty("rf",right_min_frequency_);
+			right_max_frequency_ = Common.Config.Instance().GetProperty("RF",right_max_frequency_);
+			left_key_ = Common.Config.Instance().GetProperty("lk","");
+			right_key_ = Common.Config.Instance().GetProperty("rk","");
+			ignore_empty_stream_ = Boolean.parseBoolean(Common.Config.Instance().GetProperty("i", Boolean.toString(ignore_empty_stream_)));
 		} 
 		catch (Exception e)
 		{
 			
 		}
+	}
+	
+	public String LeftKey()
+	{
+		return left_key_;
+	}
+	
+	public String RightKey()
+	{
+		return right_key_;
 	}
 	
 	public boolean IgnoreEmptyStream()

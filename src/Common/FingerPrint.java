@@ -47,7 +47,6 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			m = (float) Math.sqrt(m);
 			v_mean+=m;
 		}		
-		Utils.Dbg("Mean:%f /%d",v_mean, mfcc.length);
 		v_mean = v_mean / mfcc.length;
 		sum_ +=v_mean;
 		means_.add(v_mean);
@@ -72,21 +71,8 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 	 
 	public void ThinOut()
 	{ 
-		
-	mean_ = sum_ / mfcc_.size();		
-	Utils.Dbg("Sum: %.03f Frames:%d Mean:%.03f",sum_, mfcc_.size(), mean_);
-	/*			while (means_.get(0) < mean_ )
-		{
-			means_.remove(0);
-			mfcc_.remove(0);
-			times_.remove(0);
-		}
-		while (means_.get(means_.size() - 1) < mean_)
-		{
-			means_.remove(means_.size() - 1);
-			mfcc_.remove(mfcc_.size() - 1);
-			times_.remove(times_.size()-1);
-		}*/
+		mean_ = sum_ / mfcc_.size();		
+		Dbg.Info("Sum: %.03f\nFrames:%d\nMean:%.03f",sum_, mfcc_.size(), mean_);
 	}
 	
 	public long Time()
@@ -114,7 +100,7 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 			
 			for (int j = 0; j < mfcc_.get(i).length; ++ j)
 			{
-				str+="    ";
+				str+="";
 				for (int k = 0; k <  mfcc_.get(i)[j].length; ++k)
 				{
 					str+=String.format("%.03f\t",  mfcc_.get(i)[j][k]);

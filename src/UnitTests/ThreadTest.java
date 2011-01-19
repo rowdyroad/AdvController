@@ -1,5 +1,6 @@
 package UnitTests;
 
+import Common.Dbg;
 import Common.Utils;
 
 public class ThreadTest implements Runnable{
@@ -21,7 +22,7 @@ public class ThreadTest implements Runnable{
 					{
 						try {
 							o.wait();
-							Utils.Dbg("%d",i);
+							Dbg.Debug("%d",i);
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -68,7 +69,7 @@ public class ThreadTest implements Runnable{
 		while (true)
 		{
 			++i;
-			Utils.Dbg("run:%d",i);
+			Dbg.Debug("Run: %d",i);
 			notify();
 		}
 		

@@ -40,7 +40,7 @@ public class Args {
 			return items_;
 		}
 
-		public int  GetInt(String key, int def)
+		public int  Get(String key, int def)
 		{
 			try
 			{

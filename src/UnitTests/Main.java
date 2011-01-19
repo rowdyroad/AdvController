@@ -13,6 +13,7 @@ import Streamer.DTW;
 
 
 import Calculation.math.Matrix;
+import Common.Dbg;
 import Common.Overlapper;
 import Common.Utils;
 
@@ -68,7 +69,7 @@ public class Main {
 			
 			if (diff < 0 && !hasMax)
 			{
-				Utils.Dbg("FR:%d M:%f", i, data[i]);		
+				Dbg.Debug("FR:%d M:%f", i, data[i]);		
 				hasMax = true;
 				continue;
 			}
@@ -151,7 +152,7 @@ public class Main {
 	static private void z(byte[] data, int len)
 	{
 		try {
-			Utils.Dbg("Write:%d",len);
+			Dbg.Debug("Write:%d",len);
 			out_.write(data,0,len);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -163,7 +164,7 @@ public class Main {
 	{
 		if (buf.length != len) 
 		{
-			Utils.Dbg("buflen != len:%d %d", buf.length, len);
+			Dbg.Debug("buflen != len:%d %d", buf.length, len);
 				return;
 		}
 		int buf_pos = 0;
@@ -180,7 +181,7 @@ public class Main {
 			{
 				str+=String.format("%d ", overlapped_cache_[i]);
 			}
-			Utils.Dbg(str);
+			Dbg.Debug(str);
 			System.arraycopy(overlapped_cache_, overlapped_length_, overlapped_cache_, 0, overlapped_cache_len_ - overlapped_length_);
 			overlapped_cache_len_-=overlapped_length_;
 				
@@ -252,7 +253,7 @@ public class Main {
 		float[][] a = { {0,1,1},{2,3,3}, {0,1,1}};
 		float[][] b = { {0,1,1},{2,3,3}, {0,1,1}};
 		
-		Utils.Dbg(dtw.measure(a,b));
+		Dbg.Debug(dtw.measure(a,b));
 	}
 	
 	public static void main (String args [])

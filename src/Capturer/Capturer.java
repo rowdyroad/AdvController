@@ -5,6 +5,7 @@ import java.util.Vector;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 
+import Common.Dbg;
 import Common.FingerPrint;
 import Common.Settings;
 import Common.Source;
@@ -32,17 +33,18 @@ public class Capturer implements Frequencier.Catcher
 		{
 			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(),min_frequency, max_frequency));		
 		}
+		
 		fp_ = new FingerPrint(id);		
-		Utils.Dbg("FrameLength:%d",stream.getFrameLength());
+		Dbg.Info("FrameLength: %d",stream.getFrameLength());
 	}
 
 	public FingerPrint Process()
 	{
-		Utils.Dbg("Working...");
+		Dbg.Info("Working...");
 		source_.Process();
-		Utils.Dbg("The job is done");
+		Dbg.Info("The job is done");
 		fp_.ThinOut();	
-		Utils.Dbg(fp_);
+		Dbg.Info(fp_);
 		return fp_;
 	}
 
@@ -58,6 +60,11 @@ public class Capturer implements Frequencier.Catcher
 	@Override
 	public void OnError() {
 
+	}
+	
+	public void OnIgnore(long timeoffset)
+	{
+		
 	}
 
 }

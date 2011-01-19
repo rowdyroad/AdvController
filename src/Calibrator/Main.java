@@ -12,8 +12,11 @@ import javax.sound.sampled.TargetDataLine;
 import Streamer.Config;
 import Streamer.Loader;
 import Common.Args;
+import Common.Dbg;
 import Common.Settings;
 import Common.Source;
+import Common.SourceParser;
+
 import Common.Source.Channel;
 
 public class Main {
@@ -23,33 +26,29 @@ public class Main {
 	 * @throws LineUnavailableException 
 	 */
 	
-	public static void main(String[] args) throws LineUnavailableException {
+	public static void main(String[] args)  throws Exception 
+	{
 		// TODO Auto-generated method stub
 		
-		Args  arguments = new Args(args);
+		Common.Config.Arguments = new Args(args);
+		
+		Dbg.LogLevel = Common.Config.Instance().LogLevel();
 			
-		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16,2, true, false);			
-		InputStream stream;
-		if (arguments.Get("s","stdin") == "stdin")
+		AudioFormat format =  new AudioFormat(Config.Instance().SampleRate(),16, Config.Instance().Channels(), true, false);			
+		InputStream stream = SourceParser.GetStream(Config.Instance().Source(), format);
+		
+		if (stream == null)
 		{
-			stream = System.in;
-		}
-		else
-		{
-			DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-			TargetDataLine line = (TargetDataLine)AudioSystem.getLine(info);
-			line.open(format);
-			line.start();
-			stream = new AudioInputStream(line);
+			throw new Exception(String.format("Incorrect source %s", Config.Instance().Source()));
 		}
 		
-		Source source = new Source(stream,new Settings(format));
+		Source source = new Source(stream,new Settings(format),Common.Config.Instance().BufferCount());
 		
-		Calibrator calibrator =  ( arguments.Get("t","volume").equals("volume")) 
+		Calibrator calibrator =  ( Common.Config.Instance().GetProperty("t","volume").equals("volume")) 
 																? new VolumeCalibrator(source)
 																: new FrequencyCalibrator(source);
 																
-		source.RegisterAudioReceiver((arguments.Get("c","left").equals("left")) 
+		source.RegisterAudioReceiver((Common.Config.Instance().GetProperty("c","left").equals("left")) 
 																				? Channel.LEFT_CHANNEL 
 																				: Channel.RIGHT_CHANNEL, calibrator);
 		
