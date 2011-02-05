@@ -2,5 +2,5 @@ package Streamer;
 
 public interface Resulter
 {
-	public boolean OnFound(String id, int begin_timestamp, int end_timestamp, float equivalence);
+	public boolean OnFound(String id, long  begin_timestamp, long  end_timestamp, float equivalence);
 }

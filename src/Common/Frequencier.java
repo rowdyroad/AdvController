@@ -21,7 +21,12 @@ public class Frequencier implements Source.AudioReceiver {
 		settings_  = settings;
 		mfcc_ = new Calculation.MFCC(
 																		settings_.SampleRate(), 
-																		Common.Config.Instance().FFTWindowSize(), 20, false, min_frequency, max_frequency, 40);
+																		Common.Config.Instance().FFTWindowSize(),
+																		20,
+																		false,
+																		min_frequency,
+																		max_frequency,
+																		40);
 		overlap_length_ = overlapLength;
 		over =   new Overlapper(settings.WindowSize(), overlap_length_);
 	}
@@ -44,7 +49,7 @@ public class Frequencier implements Source.AudioReceiver {
 			while (true)
 			{
 				 float[] ret = over.Overlapp(db);
-				if (ret == null) break;
+				 if (ret == null) break;
 				catcher_.OnReceived(mfcc_.process(ret),overlap_length_);				
 			}
 		} catch(IOException e)

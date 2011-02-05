@@ -22,6 +22,8 @@ public class Summator implements Catcher, Loader.Processor {
 	private class FingerPrintWrapper
 	{
 		float last = 0;
+		long maxed_time;
+		boolean has_max = false;
 		LinkedList<FrameWaiter> waiters = new LinkedList<FrameWaiter>();
 		FingerPrint fp;
 		public FingerPrintWrapper(FingerPrint fp)
@@ -34,6 +36,8 @@ public class Summator implements Catcher, Loader.Processor {
 			return fp.equals(((FingerPrintWrapper)obj).fp);
 		}
 	}
+
+	static int fw_id_ = 0;
 	
 	private class FrameWaiter
 	{
@@ -45,19 +49,21 @@ public class Summator implements Catcher, Loader.Processor {
 		List<Float> lasts = new LinkedList<Float>();
 		int index;
 		float total;
-		int timestamp;
-		//int id;
+		long  timestamp;
+		boolean has_max = false;
+		int id;
+		int errors = 3;
 		FingerPrintWrapper fpw;
 		public FrameWaiter(FingerPrintWrapper fpw, long time, int index, float equip)
 		{
-			//id=++fw_id_;
+			id=++fw_id_;
 			this.fpw = fpw;
 			this.time = time;
-			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 8;
-			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 8;
+			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 16;
+			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 16;
 			this.index = index;
 			this.total = equip;
-			this.timestamp = (int) (System.currentTimeMillis() / 1000);
+			this.timestamp = System.currentTimeMillis();
 			//Utils.Dbg("%d, offsets:%d  %d (%d) %d  %d",off, this.offset.get(0),this.offset.get(1),this.offset.get(2),this.offset.get(3),this.offset.get(4));
 		}
 		
@@ -65,8 +71,8 @@ public class Summator implements Catcher, Loader.Processor {
 		{
 			this.fpw = fpw;
 			this.time = time;
-			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 8;
-			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 8;
+			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 16;
+			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() /16;
 			this.index = 1;
 			this.total = equip;
 			this.timestamp = (int) (System.currentTimeMillis() / 1000);
@@ -77,8 +83,8 @@ public class Summator implements Catcher, Loader.Processor {
 			++index;
 			this.total+=equip;
 			last  = 0;
-			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 8;
-			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 8;
+			this.offset_begin = time  + settings_.WindowSize()  - settings_.WindowSize() / 16;
+			this.offset_end = time + settings_.WindowSize()  +  settings_.WindowSize() / 16;
 		}
 		
 	}
@@ -129,92 +135,101 @@ public class Summator implements Catcher, Loader.Processor {
 		Dbg.Debug(str);
 	}
 	
-	@Override
+	float[][] last_mfcc;	
+
+	
+	
+	double total_ =  0; 
+	long totals_ = 0;
+	
 	public boolean OnReceived(float[][] mfcc, long timeoffset) 
 	{
-		FrameWaiter limit = null;		
-		// Utils.Dbg("FingerPrints: %d Waiters:%d",fingerPrints_.size(), waiters_.size());
-		
-		//DbgMFCC(mfcc);
-		LinkedList<FingerPrintWrapper>  maxs = new LinkedList<FingerPrintWrapper>();
-		float max = 0;
-		FingerPrintWrapper max_fpw = null;
 		for (FingerPrintWrapper fpw: fingerPrints_)
-		{
-			float x = dtw_.measure(fpw.fp.Get(0), mfcc);	
+		{			
+			float x = dtw_.measure(fpw.fp.Get(0), mfcc);			
+			total_+=x;
+			++totals_;
 			
-			if ( x >  0.1 )
-			{
-				Dbg.Debug(x);
+			//Dbg.Info(total_ / totals_);
+			
+			if ( x >=total_ / totals_)
+			{				
 				if ( x   <  fpw.last )
-				{
-					Dbg.Debug("%d | %s  add: %.03f", time_, fpw.fp.Id(), x);							
-					FrameWaiter fw = new FrameWaiter(fpw, time_, 1, fpw.last);
-					if ( limit == null )
+				{					
+					if (fpw.has_max)
 					{
-						limit = fw;
+						//DbgMFCC(last_mfcc);					
+						FrameWaiter fw = new FrameWaiter(fpw, fpw.maxed_time, 1, fpw.last);					
+						Dbg.Debug("%d | %s[%d]  add: %.03f / %.03f", fpw.maxed_time,  fpw.fp.Id(),fw.id, x, fpw.last);							
+						waiters_.add(fw);
+						fpw.has_max = false;
 					}
-					waiters_.add(fw);		
-				}				
+				}
+				else
+				{
+					fpw.has_max = true;
+					fpw.maxed_time = time_;
+				}					
+				
 				fpw.last = x;
-			}
+			}			
 		}
-		
-		
+				
 		removes_.clear();		
+		
+		
 		for (FrameWaiter fw: waiters_)
 		{
-			if ( fw == limit ) 
+			if (time_ < fw.offset_begin || removes_.contains(fw))
 			{
-				break;
+				continue;
 			}
 			
-			if ( time_  > fw.time  + fw.fpw.fp.Time() ) 
+			if ( fw.index >= fw.fpw.fp.Frames() ||  time_  >  fw.time  + fw.fpw.fp.Time()) 
 			{				
 				removes_.add(fw);
 				continue;
 			}
 			
-			if ( time_  >=  fw.offset_begin && time_ <= fw.offset_end )	
-			{	
-				float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);
-				
-				if ( x > fw.last )
-				{
-					fw.maxed_time  = time_;
-					fw.last = x;
-				}	
-			}
-			else
+			if (time_ > fw.offset_end)
 			{
-				if (time_  > fw.offset_end)
+				if (fw.last  <  total_  / totals_)
 				{
-					if (fw.last > 0.1)
-					{		
-						fw.Next(fw.maxed_time, fw.last);										
-						if ((double)fw.index / fw.fpw.fp.Frames() >= Config.Instance().FingerPrintEquivalency())
-						{											
-								if (resulter_ != null)
-								{										
-										resulter_.OnFound(fw.fpw.fp.Id(), fw.timestamp,(int)(System.currentTimeMillis() / 1000), fw.total  / fw.index);
-								}
-								
-								float e = fw.total / fw.index;																
-								for(FrameWaiter fw_ : waiters_)
-								{
-									if (fw_.total / fw_.index < e)
-									{
-										removes_.add(fw_);
-									}									
-								}								
-								removes_.add(fw);
-						}
-					}
-					else
-					{
 						removes_.add(fw);
-					}
+						continue;
 				}
+
+				Dbg.Debug("%d | %s[%d] next[%d]: %f",fw.maxed_time, fw.fpw.fp.Id(), fw.id, fw.index, fw.last);
+
+				fw.Next(fw.maxed_time, fw.last);					
+				if ((double)fw.index / fw.fpw.fp.Frames() >= Config.Instance().FingerPrintEquivalency())
+				{											
+						if (resulter_ != null)
+						{										
+								Dbg.Info(total_ / totals_);
+								resulter_.OnFound(fw.fpw.fp.Id(), fw.timestamp,System.currentTimeMillis(), fw.total  / fw.index);
+						}
+							
+						float e = fw.total / fw.index;				
+						for(FrameWaiter fw_ : waiters_)
+						{
+							if (fw_.total / fw_.index < e)
+							{
+								removes_.add(fw_);
+							}									
+						}						
+						removes_.add(fw);
+						continue;
+				}
+			}
+							
+			float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);			
+			total_+=x;
+			++totals_;
+			if (x  > fw.last)
+			{
+				fw.maxed_time = time_;
+				fw.last = x;
 			}
 		}
 		waiters_.removeAll(removes_);

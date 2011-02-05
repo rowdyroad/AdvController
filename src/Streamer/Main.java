@@ -12,7 +12,11 @@ public static void main (String args []) throws Exception {
 		Common.Config.Arguments = new Common.Args(args);
 		Dbg.LogLevel = Common.Config.Instance().LogLevel();		
 	}
+	
+	long time  = System.currentTimeMillis();
 	new Streamer().Process();
+	
+	Dbg.Info("\n\n%d",System.currentTimeMillis() - time);
 }
 
 }

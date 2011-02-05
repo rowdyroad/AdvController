@@ -7,14 +7,26 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedList;
+import java.util.Map.Entry;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Vector;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import Streamer.DTW;
 
 
+import Calculation.FFT;
 import Calculation.math.Matrix;
 import Common.Dbg;
 import Common.Overlapper;
+import Common.Settings;
+import Common.Source;
 import Common.Utils;
 
 public class Main {
@@ -256,10 +268,55 @@ public class Main {
 		Dbg.Debug(dtw.measure(a,b));
 	}
 	
-	public static void main (String args [])
-	{
-		DTWTest();
-		/*
+	public static void main (String args []) throws UnsupportedAudioFileException, IOException
+	{		
+		
+		AudioInputStream w = AudioSystem.getAudioInputStream(new File("d:\\work\\test_with_madgl.wav"));
+		AudioInputStream wo = AudioSystem.getAudioInputStream(new File("d:\\work\\test_wo_madgl.wav"));
+		AudioInputStream test = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\test.wav"));
+		AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\temp\\pi.wav"));
+		AudioInputStream lz_rec = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\z\\lz_rec.wav"));
+		AudioInputStream lz = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\z\\lz.wav"));
+		
+		Dbg.Info("lz");
+		Window  a = new Window();
+		AudioInputStream stream =lz;		
+		Settings settings = new Settings(stream.getFormat());				
+		Source source = new Source(stream,settings,100);		
+		source.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, a);		
+		source.Process();
+		
+		Dbg.Info("lz_rec");
+		Window b = new Window();
+		stream = lz_rec;		
+		settings = new Settings(stream.getFormat());				
+		source = new Source(stream,settings,100);		
+		source.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, b);		
+		source.Process();
+		//Limits.Process(a, b);
+		
+		
+	
+/*			
+			
+			for (int j = 0; j < b.data_.size(); ++j)			
+			{
+				int r = a.rms(a.data_.get(i), b.data_.get(j));
+				if (r <= 5 )
+				{
+					Dbg.Info("%d / %d", i, j);
+					a.print(a.data_.get(i));				 
+					a.print(b.data_.get(j));				 				
+					Dbg.Info("rms:%d\n",r);
+				}
+			}		
+
+//			Dbg.Info("min: %d max:%d",min,max);
+		}
+*/
+		
+		
+				/*
 		for (int i = 0; i < 1000; ++i)
 		{
 			Memory(i);
@@ -333,4 +390,6 @@ public class Main {
 		
 		
 	}
+
+
 }

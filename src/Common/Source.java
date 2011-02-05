@@ -113,9 +113,10 @@ public class Source implements Runnable {
 
 	private float  convertFromAr(byte[] b, int start, int end)
 	{
+		
 		ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
 		buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
-		return Math.max((float) buf.getShort() / Short.MAX_VALUE - Config.Instance().NoiseGate(),0);
+		return (float) buf.getShort() / Short.MAX_VALUE;
 		//final float res = 	Math.max((float) buf.getShort() / Short.MAX_VALUE - Config.Instance().KillGate(), 0);   ;
 		//return (res - Config.Instance().KillGate() <= 0) ? 0 : res;
 	} 
@@ -138,7 +139,9 @@ public class Source implements Runnable {
 			{
 				if (left_recv != null)
 				{
+					
 					left[j] = convertFromAr(buf, i, i + 1);
+						
 				}
 				
 				if (right_recv != null)
@@ -150,6 +153,7 @@ public class Source implements Runnable {
 			{	
 				left[j] = right[j] = convertFromAr(buf, i, i + 1);
 			}
+			//Dbg.Info("%02X %02X = %f",buf[i],buf[i+1],left[j]);
 			
 			max_left = Math.max(max_left, left[j]);
 			max_right = Math.max(max_right, right[j]);
@@ -173,7 +177,7 @@ public class Source implements Runnable {
 		{
 			for (int i = 0; i < right_recv.size(); ++i)
 			{
-				right_recv.get(i).OnSamplesReceived(max_right / settings_.WindowSize() > Common.Config.Instance().KillGate() ? right : null);
+				right_recv.get(i).OnSamplesReceived(max_right > Common.Config.Instance().KillGate() ? right : null);
 			}
 		}
 	}

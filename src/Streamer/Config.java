@@ -27,8 +27,9 @@ public class Config {
 	private int right_max_frequency_ = 20000;
 	private String left_key_;
 	private String right_key_;
-	private boolean ignore_empty_stream_ = false;
-	
+	private boolean ignore_empty_stream_ = false;	
+	private float frame_equip_ = 0.1f;
+	private int overlapped_coef_ = 1;
 	private Config()
 	{
 		try
@@ -47,6 +48,8 @@ public class Config {
 			left_key_ = Common.Config.Instance().GetProperty("lk","");
 			right_key_ = Common.Config.Instance().GetProperty("rk","");
 			ignore_empty_stream_ = Boolean.parseBoolean(Common.Config.Instance().GetProperty("i", Boolean.toString(ignore_empty_stream_)));
+			frame_equip_ = Float.parseFloat(Common.Config.Instance().GetProperty("fe", Float.toString(frame_equip_)));
+			overlapped_coef_ =  Common.Config.Instance().GetProperty("oc",overlapped_coef_);
 		} 
 		catch (Exception e)
 		{
@@ -113,5 +116,13 @@ public class Config {
 	{
 		return fingerprint_equivalency_;
 	}
+	public float FrameEquip()
+	{
+		return frame_equip_;
+	}
 	
+	public int OverlappedCoef()
+	{
+		return overlapped_coef_;
+	}
 }

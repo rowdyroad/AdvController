@@ -3,6 +3,7 @@ package Calculation;
 import java.io.IOException;
 
 import Calculation.math.Matrix;
+import Common.Dbg;
 
 /**
  * <b>Mel Frequency Cepstrum Coefficients - MFCCs</b>
@@ -167,7 +168,7 @@ public class MFCC
     ret = new float[melFilterBanks.getRowDimension()];
 
     //create power fft object
-    normalizedPowerFFT = new FFT(FFT.FFT_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
+    normalizedPowerFFT = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
     
     //compute rescale factor to rescale and normalize at once (default is 96dB = 2^16)
     scale = (float) (Math.pow(10, 96 / 20));    
@@ -176,7 +177,7 @@ public class MFCC
 
   /**
    * Returns the boundaries (start, center, end) of a given number of triangular
-   * mel filters at linear scale. Mel-filters are triangular filters on the
+   *\ mel filters at linear scale. Mel-filters are triangular filters on the
    * linear scale with an integral (area) of 1. However they are placed
    * equidistantly on the mel scale, which is non-linear rather logarithmic.
    * The minimum linear frequency and the maximum linear frequency define the
@@ -444,11 +445,14 @@ public class MFCC
 	  //perform power fft
 	  normalizedPowerFFT.transform(buffer, null);
 
+	  int stt =  (int) (this.minFreq * windowSize / this.sampleRate);
+	  int stp =  (int) (this.maxFreq * windowSize / this.sampleRate);
+  
 	  float [] result =  new  float[dctMatrix.getRowDimension()];
 	  for (int i = 0; i < ret.length; ++i)
 	  {
 		  ret[i] = 0;
-		  for (int j =0; j < fftSize; ++j)
+		  for (int j = 0; j < buffer.length/2; ++j)
 		  {
 			  ret[i] += melFilterBanks.get(i, j) * buffer[j];
 		  }
@@ -470,7 +474,10 @@ public class MFCC
 		  {
 			  result[i]+= dctMatrix.get(i, j) * ret[j]; 
 		  }
+		  result[i] = Math.round(result[i]  / 10	);
 	  }
+	  
+	  
 	  return result;
   }
 }

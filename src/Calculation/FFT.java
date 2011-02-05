@@ -497,6 +497,10 @@ private void blackmanNuttall(int size)
 		calculateWindowFunctionSum();
 	}
 
+  public int getWindowSize()
+  {
+	  return this.windowSize;
+  }
   public int getTransformationType()
   {
     return transformationType;
@@ -514,13 +518,15 @@ private void blackmanNuttall(int size)
 	 *  @param window the values of the window function to be applied to data
 	 */
 	private void applyWindowFunction( float[] data)
-  {
+	{
 		if(windowFunctionType != WND_NONE)
-    {
-      for (int i = 0; i < data.length; i++)
-        data[i] *= windowFunction[i];
-    }
+	    {
+	      for (int i = 0; i < data.length; i++)
+	        data[i] *= windowFunction[i];
+	    }
 	}
+	
+	
 
   private void calculateWindowFunctionSum()
   {

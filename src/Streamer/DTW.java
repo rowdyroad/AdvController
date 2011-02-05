@@ -1,5 +1,7 @@
 package Streamer;
 
+import Common.Dbg;
+
 public class DTW {
 	
 	private  float[][] data_;

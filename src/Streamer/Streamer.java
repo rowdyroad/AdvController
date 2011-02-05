@@ -49,7 +49,7 @@ public class Streamer
 			Dbg.Info("Add left channel [%s]", Config.Instance().LeftKey());
 			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().LeftKey()));		
 			loader_.AddProcessor(Config.Instance().LeftKey(), sm);
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,2048,Config.Instance().LeftMinFrequency(),Config.Instance().LeftMaxFrequency()));
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,settings_.WindowSize() / Config.Instance().OverlappedCoef(),Config.Instance().LeftMinFrequency(),Config.Instance().LeftMaxFrequency()));
 		}
 		
 		if (Config.Instance().Channels() > 1 && ! Config.Instance().RightKey().isEmpty())
@@ -57,7 +57,7 @@ public class Streamer
 			Dbg.Info("Add right channel [	%s]", Config.Instance().RightKey());
 			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().RightKey()));
 			loader_.AddProcessor(Config.Instance().RightKey(), sm);
-			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(sm, settings_,2048,Config.Instance().RightMinFrequency(),Config.Instance().RightMaxFrequency()));
+			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(sm, settings_,settings_.WindowSize() / Config.Instance().OverlappedCoef(), Config.Instance().RightMinFrequency(),Config.Instance().RightMaxFrequency()));
 		}		
 
 		Dbg.Info("Listening...");		

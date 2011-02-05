@@ -9,36 +9,53 @@ import Streamer.Resulter;
 
 public class ResultSubmiter implements Resulter {
 
+	final float ALLOWED_EQU = 0.1f;
 	private String key_;
 	
-	
-	private class TimePeriod
-	{
-		int begin_timestamp;
-		int end_timestamp;
-		float equivalence;
-		String id;
-		
-		public TimePeriod(String id, int begin_timestamp, int end_timestamp, float equivalence)
-		{
-			this.id = id;
-			this.begin_timestamp = begin_timestamp;
-			this.end_timestamp = end_timestamp;
-			this.equivalence = equivalence;
-		}
-	}
-	
-	List<TimePeriod> time_periods_ = new LinkedList<TimePeriod>();
-	
-	
-	int begin_ = 0;
-	int end_ = 0;
+	Thread thread_;
+	long  begin_ = 0;
+	long  end_ = 0;
 	float equ_ = 0;
 	String id_ = null;
 	
 	public ResultSubmiter(String key)
 	{
 		key_ = key;
+		thread_= new Thread(new Runnable(){
+
+			@Override
+			public void run()
+			{
+				while (thread_.isAlive())
+				{
+					if (end_  >=  System.currentTimeMillis()  + 1000)
+					{
+							collect_found();
+					}				
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				
+				Dbg.Warn("Interrupterd");
+			}});
+		
+		thread_.setDaemon(true);
+		thread_.start();
+	}
+	
+	
+	synchronized void collect_found()
+	{		
+		if (id_ != null && equ_ > ALLOWED_EQU)
+		{
+			Dbg.Info("!!! %s %f",id_, equ_);
+			run();
+		}		
+		id_ = null;
 	}
 	private String prepareForRun(String program, String id, long timestamp, int equivalence)
 	{
@@ -66,32 +83,26 @@ public class ResultSubmiter implements Resulter {
 	}
 	
 	@Override
-	public boolean OnFound(String id, int  begin, int end,  float equ) {
+	public boolean OnFound(String id, long  begin, long  end,  float equ) {
 		// TODO Auto-generated method stub
 		
 		//if (equivalence < 0.2) return false;
-		
 		//Dbg.Info("!!! Found Key: %s\nId: %s\nTimestamp : %d\nEquivalence: %f",key_, id, timestamp, equivalence );
 		
-		Dbg.Debug("TS: %d / %d\nCTS: %d / %d\nE: %f CE: %f",
+		/*Dbg.Info("ID: %s CID: %s\nTS: %d / %d\nCTS: %d / %d\nE: %f CE: %f",
+				id,
+				id_,
 				begin,
 				end,
 				begin_, 
 				end_, 
 				equ,
 				equ_);
-		
+		*/
 		if (begin >=  end_)
 		{
-			if (id_ != null)	
-			{
-				if (equ_ > 0.2)
-				{
-					Dbg.Info("!!! %s %f",id_, equ_);
-					run();
-				}				
-				id = null;
-			}			
+			//Dbg.Info("2");
+			collect_found();
 			id_ = id;
 			begin_ = begin;
 			end_ =  end;
@@ -100,6 +111,7 @@ public class ResultSubmiter implements Resulter {
 		}
 		else
 		{		
+		//	Dbg.Info("1");
 			if (equ_  <  equ) 
 			{
 				id_ = id;
