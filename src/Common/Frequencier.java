@@ -42,8 +42,7 @@ public class Frequencier implements Source.AudioReceiver {
 		{
 			catcher_.OnIgnore(settings_.WindowSize());
 			return;
-		}
-		
+		}		
 		try 
 		{
 			while (true)

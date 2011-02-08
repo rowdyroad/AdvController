@@ -36,11 +36,11 @@ public class MFCC
   protected int windowSize;
   protected int hopSize;
   protected float sampleRate;
-  protected double baseFreq;
+  protected float baseFreq;
 
   //fields concerning the mel filter banks
-  protected double minFreq;
-  protected double maxFreq;
+  protected float minFreq;
+  protected float maxFreq;
   protected int numberFilters;
 
   //fields concerning the MFCCs settings
@@ -48,14 +48,13 @@ public class MFCC
   protected boolean useFirstCoefficient;
 
   //implementation details
-  private float[] buffer;
   private Matrix dctMatrix;
   private Matrix melFilterBanks;
   private FFT normalizedPowerFFT;
   private float scale;
-  private int fftSize;
+  private int halfWindowSize;
   private float[] ret;
-  private static double log10 = 10 * (1 / Math.log(10)); // log for base 10 and scale by factor 10
+  private static float log10 = (float) (10 * (1 / Math.log(10))); // log for base 10 and scale by factor 10
  
   
   /**
@@ -70,7 +69,7 @@ public class MFCC
    */
   public MFCC(float sampleRate) throws IllegalArgumentException
   {
-    this(sampleRate, 512, 20, true, 20.0, 16000.0, 40);
+    this(sampleRate, 512, 20, true, 20.0f, 16000.0f, 40);
   }
  
   /**
@@ -89,7 +88,7 @@ public class MFCC
    */
   public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient) throws IllegalArgumentException
   {
-    this(sampleRate, windowSize, numberCoefficients, useFirstCoefficient, 20.0, 16000.0, 40);
+    this(sampleRate, windowSize, numberCoefficients, useFirstCoefficient, 20.0f, 16000.0f, 40);
   }
 
   /**
@@ -104,12 +103,12 @@ public class MFCC
    * @param useFirstCoefficient boolean indicates whether the first coefficient
    *                                    of the dct process should be used in the
    *                                    mfcc feature vector or not
-   * @param minFreq double start of the interval to place the mel-filters in
-   * @param maxFreq double end of the interval to place the mel-filters in
+   * @param minFreq float start of the interval to place the mel-filters in
+   * @param maxFreq float end of the interval to place the mel-filters in
    * @param numberFilters int number of mel-filters to place in the interval
    * @throws IllegalArgumentException raised if method contract is violated
    */
-  public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, double minFreq, double maxFreq, int numberFilters) throws IllegalArgumentException
+  public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, float minFreq, float maxFreq, int numberFilters) throws IllegalArgumentException
   {
     //check for correct window size
     if(windowSize < 32)
@@ -156,8 +155,7 @@ public class MFCC
     this.numberFilters = numberFilters;
 
     //create buffers
-    buffer = new float[windowSize];
-    fftSize = windowSize / 2;
+    halfWindowSize = windowSize / 2;
    
     
 
@@ -168,10 +166,10 @@ public class MFCC
     ret = new float[melFilterBanks.getRowDimension()];
 
     //create power fft object
-    normalizedPowerFFT = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
-    
+    scale  = (float) (Math.pow(10, 96 / 20));
+    normalizedPowerFFT = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, scale, FFT.WND_BLACKMAN_NUTTALL);
+ 
     //compute rescale factor to rescale and normalize at once (default is 96dB = 2^16)
-    scale = (float) (Math.pow(10, 96 / 20));    
   }
 
 
@@ -190,19 +188,19 @@ public class MFCC
    * center = boundaries[k];
    * rightBoundary = boundaries[k+1];
    *
-   * @param minFreq double frequency used for the left boundary of the first
+   * @param minFreq float frequency used for the left boundary of the first
    *                       filter
-   * @param maxFreq double frequency used for the right boundary of the last
+   * @param maxFreq float frequency used for the right boundary of the last
    *                       filter
    * @param numberFilters int number of filters to place within the interval
    *                          [minFreq, maxFreq]
-   * @return double[] array holding the boundaries
+   * @return float[] array holding the boundaries
    */
-  private double[] getMelFilterBankBoundaries(double minFreq, double maxFreq, int numberFilters)
+  private float[] getMelFilterBankBoundaries(float minFreq, float maxFreq, int numberFilters)
   {
     //create return array
-    double[] centers = new double[numberFilters + 2];
-    double maxFreqMel, minFreqMel, deltaFreqMel, nextCenterMel;
+    float[] centers = new float[numberFilters + 2];
+    float maxFreqMel, minFreqMel, deltaFreqMel, nextCenterMel;
 
     //compute mel min./max. frequency
     maxFreqMel = linToMelFreq(maxFreq);
@@ -236,7 +234,7 @@ public class MFCC
  private Matrix getMelFilterBanks()
   {
     //get boundaries of the different filters
-    double[] boundaries = getMelFilterBankBoundaries(minFreq, maxFreq, numberFilters);
+    float[] boundaries = getMelFilterBankBoundaries(minFreq, maxFreq, numberFilters);
 
     //ignore filters outside of spectrum
     for(int i = 1; i < boundaries.length-1; i++)
@@ -249,18 +247,18 @@ public class MFCC
     }
 
     //create the filter bank matrix
-    double[][] matrix = new double[numberFilters][];
+    float[][] matrix = new float[numberFilters][];
 
     //fill each row of the filter bank matrix with one triangular mel filter
     for(int i = 1; i <= numberFilters; i++)
     {
-      double[] filter = new double[(windowSize/2)+1];
+      float[] filter = new float[(windowSize/2)+1];
 
       //for each frequency of the fft
       for(int j = 0; j < filter.length; j++)
       {
         //compute the filter weight of the current triangular mel filter
-        double freq = baseFreq * j;
+        float freq = baseFreq * j;
         filter[j] = getMelFilterWeight(i, freq, boundaries);
       }
 
@@ -285,21 +283,21 @@ public class MFCC
    *
    * @param filterBank int the number of the mel-filter, used to extract the
    *                       boundaries of the filter from the array
-   * @param freq double    the frequency, at which the filter weight should be
+   * @param freq float    the frequency, at which the filter weight should be
    *                       returned
-   * @param boundaries double[] an array containing all the boundaries
-   * @return double the filter weight
+   * @param boundaries float[] an array containing all the boundaries
+   * @return float the filter weight
    */
-  private double getMelFilterWeight(int filterBank, double freq, double[] boundaries)
+  private float getMelFilterWeight(int filterBank, float freq, float[] boundaries)
   {
     //for most frequencies the filter weight is 0
-    double result = 0;
+    float result = 0;
 
     //compute start- , center- and endpoint as well as the height of the filter
-    double start = boundaries[filterBank - 1];
-    double center = boundaries[filterBank];
-    double end = boundaries[filterBank + 1];
-    double height = 2.0d/(end - start);
+    float start = boundaries[filterBank - 1];
+    float center = boundaries[filterBank];
+    float end = boundaries[filterBank + 1];
+    float height = 2.0f/(end - start);
 
     //is the frequency within the triangular part of the filter
     if(freq >= start && freq <= end)
@@ -327,9 +325,9 @@ public class MFCC
    * @param inputFreq the input frequency in linear scale
    * @return the frequency in a mel scale
    */
-  private double linToMelFreq(double inputFreq)
+  private float linToMelFreq(float inputFreq)
   {
-      return (2595.0 * (Math.log(1.0 + inputFreq / 700.0) / Math.log(10.0)));
+      return (float) (2595.0f * (Math.log(1.0f + inputFreq / 700.0f) / Math.log(10.0f)));
   }
 
 
@@ -339,9 +337,9 @@ public class MFCC
    * @param inputFreq the input frequency in mel scale
    * @return the frequency in a linear scale
    */
-  private double melToLinFreq(double inputFreq)
+  private float melToLinFreq(float inputFreq)
   {
-      return (700.0 * (Math.pow(10.0, (inputFreq / 2595.0)) - 1.0));
+      return (float) (700.0f * (Math.pow(10.0f, (inputFreq / 2595.0f)) - 1.0f));
   }
 
 
@@ -358,9 +356,9 @@ public class MFCC
   private Matrix getDCTMatrix()
   {
     //compute constants
-    double k = Math.PI/numberFilters;
-    double w1 = 1.0/(Math.sqrt(numberFilters));//1.0/(Math.sqrt(numberFilters/2));
-    double w2 = Math.sqrt(2.0/numberFilters);//Math.sqrt(2.0/numberFilters)*(Math.sqrt(2.0)/2.0);
+    float k = (float) (Math.PI/numberFilters);
+    float w1 = (float) (1.0f/(Math.sqrt(numberFilters)));//1.0/(Math.sqrt(numberFilters/2));
+    float w2 = (float) Math.sqrt(2.0f/numberFilters);//Math.sqrt(2.0/numberFilters)*(Math.sqrt(2.0)/2.0);
 
     //create new matrix
     Matrix matrix = new Matrix(numberCoefficients, numberFilters);
@@ -371,9 +369,9 @@ public class MFCC
       for(int j = 0; j < numberFilters; j++)
       {
         if(i == 0)
-          matrix.set(i, j, w1 * Math.cos(k*i*(j + 0.5d)));
+          matrix.set(i, j, (float) (w1 * Math.cos(k*i*(j + 0.5f))));
         else
-          matrix.set(i, j, w2 * Math.cos(k*i*(j + 0.5d)));
+          matrix.set(i, j, (float) (w2 * Math.cos(k*i*(j + 0.5f))));
       }
     }
 
@@ -389,9 +387,9 @@ public class MFCC
    * This is done by splitting the given data into windows and processing
    * each of these windows with processWindow().
    *
-   * @param input double[] input data is an array of samples, must be a multiple
+   * @param input float[] input data is an array of samples, must be a multiple
    *                       of the hop size, must not be a null value
-   * @return double[][] an array of arrays contains a double array of Sone value
+   * @return float[][] an array of arrays contains a float array of Sone value
    *                    for each window
    * @throws IOException if there are any problems regarding the inputstream
    * @throws IllegalArgumentException raised if method contract is violated
@@ -416,67 +414,46 @@ public class MFCC
     return mfcc;
   }
 
-
-  /**
-   * Returns the window size.
-   *
-   * @return int the window size in samples
-   */
   public int getWindowSize()
   {
     return windowSize;
   }
-
-
  
   public  float[] processWindow( float[] window, int start)
   {
 	  if(start < 0)
 	      throw new IllegalArgumentException("start must be a positve value");
-
 	  //check window size
 	  if(window == null || window.length < windowSize)
 		  throw new IllegalArgumentException("the given data array must not be a null value and must contain data for one window");
-
-	  //just copy to buffer and rescaled the input samples according to the original matlab implementation to 96dB
-	  for (int j = 0; j < windowSize; j++)
-		  buffer[j] = window[j + start] * scale;
-
-	  //perform power fft
-	  normalizedPowerFFT.transform(buffer, null);
-
-	  int stt =  (int) (this.minFreq * windowSize / this.sampleRate);
-	  int stp =  (int) (this.maxFreq * windowSize / this.sampleRate);
-  
-	  float [] result =  new  float[dctMatrix.getRowDimension()];
+	  	  
+	  
+	  final float[] buffer = normalizedPowerFFT.transform(window,start);
+	  	  	 
+	  final int stt = (int) Math.floor(minFreq * windowSize / sampleRate);
+	  final int stp = (int) Math.ceil(maxFreq * windowSize / sampleRate);
+	  
 	  for (int i = 0; i < ret.length; ++i)
 	  {
 		  ret[i] = 0;
-		  for (int j = 0; j < buffer.length/2; ++j)
+		  for (int j = 0; j <halfWindowSize;  ++j)
 		  {
-			  ret[i] += melFilterBanks.get(i, j) * buffer[j];
+			  ret[i] += melFilterBanks.A[i][j] * buffer[j];
 		  }
-		  
-		  if (ret[i] < 1)
-		  {
-			  ret[i] = 0;
-		  }
-		  else
-		  {
-			  ret[i] = (float) (log10 * Math.log(ret[i]));
-		  }
+		  ret[i] = (ret[i] < 1 ) ? 0 :  (float) (log10 * Math.log(ret[i]));
 	  }
 	  
+	  float [] result =  new  float[dctMatrix.getRowDimension()];
+		
 	  for (int i = 0; i < result.length; ++i)
 	  {
 		  result[i] = 0;
 		  for (int j = 0; j < ret.length; ++j)
 		  {
-			  result[i]+= dctMatrix.get(i, j) * ret[j]; 
+			  result[i] += dctMatrix.A[i][j] * ret[j]; 
 		  }
-		  result[i] = Math.round(result[i]  / 10	);
+		  result[i] = Math.round(result[i]);
 	  }
-	  
 	  
 	  return result;
   }

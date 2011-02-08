@@ -17,7 +17,7 @@ public class FrequencyComparer {
 	{
 		windowSize_ = windowSize;
 		buffer_  = new float[windowSize];
-		fft_  = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, FFT.WND_BLACKMAN_NUTTALL);
+		fft_  = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, 1.0f, FFT.WND_BLACKMAN_NUTTALL);
 		hopSize_ = windowSize / 2;
 		numberCoefficients_ = numberCoefficients;		
 		maxes_ = new Freq[numberCoefficients];
@@ -83,11 +83,8 @@ public class FrequencyComparer {
 			  throw new IllegalArgumentException("the given data array must not be a null value and must contain data for one window");
 
 		  //just copy to buffer and rescaled the input samples according to the original matlab implementation to 96dB
-		  for (int j = 0; j < windowSize_; j++)
-			  buffer_[j] = window[j + start];// * scale;
-
 		  //perform power fft
-		  fft_.transform(buffer_, null);
+		  buffer_ = fft_.transform(window,start);
 
 		  double last = buffer_[10];	 
 		  boolean maxed = false;	  

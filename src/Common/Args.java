@@ -9,8 +9,27 @@ public class Args {
 
 		private Map<String,String> pairs_ = new TreeMap<String,String>();
 		private List<String> items_ = new LinkedList<String>();
+		static private String[] args = null;
+		static private Args instance_ = null;
 		
-		public Args(String[] args)
+		public static void Init(String[] args)
+		{
+					Args.args = args;
+		}
+		
+		public static Args Instance()
+		{
+			if (instance_ == null)
+			{
+				if (args == null)
+					throw new IllegalArgumentException("Undefined arguments. Please init before");
+				
+				instance_ = new Args(args);
+			}			
+			return instance_;		
+		}
+		
+		private Args(String[] args)
 		{
 			for (int i = 0; i < args.length;++i)
 			{				

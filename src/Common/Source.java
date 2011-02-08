@@ -111,12 +111,25 @@ public class Source implements Runnable {
 		receivers_.get(channel).add(receiver);
 	}
 
-	private float  convertFromAr(byte[] b, int start, int end)
-	{
-		
-		ByteBuffer buf =  ByteBuffer.wrap(b, start, end - start + 1);
-		buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
-		return (float) buf.getShort() / Short.MAX_VALUE;
+	private float  convertFromAr(byte[] b, int start)
+	{		
+		ByteBuffer buf =  ByteBuffer.wrap(b, start, settings_.SampleSize());
+		float ret = Float.MIN_VALUE;
+		switch (settings_.SampleSize())
+		{
+			case 1:
+				ret =  (float) buf.get() / Byte.MAX_VALUE;
+			break;
+			case 2:
+				buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
+				ret = (float) buf.getShort() / Short.MAX_VALUE;
+			break;
+			case 4:
+				buf.order(settings_.IsBigEndian()? ByteOrder.BIG_ENDIAN :  ByteOrder.LITTLE_ENDIAN);
+				ret = (float)buf.getInt() / Integer.MAX_VALUE;
+			break;
+		}		
+		return ret;		
 		//final float res = 	Math.max((float) buf.getShort() / Short.MAX_VALUE - Config.Instance().KillGate(), 0);   ;
 		//return (res - Config.Instance().KillGate() <= 0) ? 0 : res;
 	} 
@@ -138,20 +151,17 @@ public class Source implements Runnable {
 			if (settings_.Channels() == 2)
 			{
 				if (left_recv != null)
-				{
-					
-					left[j] = convertFromAr(buf, i, i + 1);
-						
-				}
-				
+				{					
+					left[j] = convertFromAr(buf, i);					
+				}				
 				if (right_recv != null)
 				{
-					right[j] = convertFromAr(buf, i + 2, i + 3);
+					right[j] = convertFromAr(buf, i + settings_.SampleSize());
 				}
 			}
 			else
 			{	
-				left[j] = right[j] = convertFromAr(buf, i, i + 1);
+				left[j] = right[j] = convertFromAr(buf, i);
 			}
 			//Dbg.Info("%02X %02X = %f",buf[i],buf[i+1],left[j]);
 			

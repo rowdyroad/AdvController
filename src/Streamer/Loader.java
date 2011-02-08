@@ -23,8 +23,7 @@ public class Loader implements Runnable {
 	private String directory_;
 	private Thread thread_;
 	
-	private Map<String, TreeMap<String, FingerPrint>> data_ = new TreeMap<String, TreeMap<String, FingerPrint>>();
-	
+	private Map<String, TreeMap<String, FingerPrint>> data_ = new TreeMap<String, TreeMap<String, FingerPrint>>();	
 	private Map<String, LinkedList<Processor>> processors_ = new TreeMap<String, LinkedList<Processor>>();
 	
 	public Loader(String directory)

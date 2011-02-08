@@ -25,13 +25,11 @@ public class DTW {
             	final float[] a = doublesOne[i];
             	final float[] b = doublesTwo[j];
             	float diff = 0;
-            	float adiff = 0;
                 for (int k = 0; k < a.length; k++) 
                 {
-                	adiff = a[k] - b[k];
+                	final float adiff = a[k] - b[k];
                     diff +=  adiff * adiff;
-                }
-                
+                }               
                 data_[i][j]  = diff;    
                 if (j ==0 && i > 0)
                 {
@@ -40,14 +38,9 @@ public class DTW {
                 else
                 if ( j > 0)
                 {
-                	if (i > 0)
-                	{
-                    	data_[i][j] = data_[i][j] +Math.min(data_[i - 1][j - 1], Math.min(data_[i - 1][j], data_[i][j - 1]));
-                	}
-                	else
-                	{
-                    	data_[0][j] = data_[0][j] + data_[0][j - 1];
-                	}
+                    data_[i][j] = (i >  0) 
+                    										? data_[i][j] +Math.min(data_[i - 1][j - 1], Math.min(data_[i - 1][j], data_[i][j - 1]))
+                    										:  data_[0][j] + data_[0][j - 1];                
                 }
             }
         }

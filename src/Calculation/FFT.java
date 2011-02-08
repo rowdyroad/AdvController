@@ -34,19 +34,22 @@ public final class FFT
 	private   float[]  Wj_rs;
 	private   float[]  Wj_is;
 	private  int[] Tj;
-
-	public FFT(int transformationType, int windowSize)
+	
+	private float scale;
+   private float[] data_;
+	public FFT(int transformationType, int windowSize, float scale)
   {
-    this(transformationType, windowSize, WND_NONE, windowSize);
+    this(transformationType, windowSize, scale, WND_NONE, windowSize);
   }
 
-  public FFT(int transformationType, int windowSize, int windowFunctionType)
+  public FFT(int transformationType, int windowSize, float scale, int windowFunctionType)
   {
-    this(transformationType, windowSize, windowFunctionType, windowSize);
+    this(transformationType, windowSize, scale, windowFunctionType, windowSize);
   }
 
-  public FFT(int transformationType, int windowSize, int windowFunctionType, int support)
+  public FFT(int transformationType, int windowSize, float scale, int windowFunctionType, int support)
   {
+	  this.scale = scale;
 	 bits = (int)Math.rint(Math.log(windowSize) / Math.log(2));
 	 Wj_rs = new  float[bits+1];
 	 Wj_is = new  float[bits+1];	
@@ -85,6 +88,7 @@ public final class FFT
 
     //create window function buffer and set window function
     this.windowFunction = new  float[windowSize];
+    this.data_ = new float[windowSize];
     setWindowFunction(windowFunctionType, support);
   }
 
@@ -104,88 +108,82 @@ public final class FFT
     }
 
   }
+  
 
-  public void transform( float[] re,  float[] im)
+  public float[] transform( float[] re,  int start)
   {
-    if(re.length < windowSize)
-      throw new IllegalArgumentException("Data array is smaller than FFT window size");
-    applyWindowFunction(re);
-    switch(transformationType)
-    {
-      case FFT_FORWARD:
-        if(im.length < windowSize)
-          throw new IllegalArgumentException("Data array is smaller than FFT window size");
-        else
-          fft(re, im);
-        break;
-      case FFT_MAGNITUDE:
-    	  magnitudeFFT(re);
-        break;
-      case FFT_MAGNITUDE_PHASE:
-        if(im.length < windowSize)
-          throw new IllegalArgumentException("Data array is smaller than FFT window size");
-        else
-         magnitudePhaseFFT(re, im);
-        break;
-      case FFT_NORMALIZED_POWER:
-        normalizedPowerFFT(re);
-        break;
-      case FFT_POWER:
-        powerFFT(re);
-        break;
-      case FFT_POWER_PHASE:
-        if(im.length < windowSize)
-          throw new IllegalArgumentException("Data array is smaller than FFT window size");
-        else
-          powerPhaseFFT(re, im);
-        break;
-    }
+	  if(re.length < windowSize)
+      throw new IllegalArgumentException("Data array is smaller than FFT window size");	
+    
+    	if ( windowFunctionType != WND_NONE )
+    	{
+    		for (int i = 0; i < windowSize; ++i)
+    		{
+    			data_[i] =  re[ i + start] * windowFunction[i] * scale;
+    		}
+	    }
+		else
+		{
+    		for (int i = 0; i < windowSize;  ++i)
+    		{
+    			data_[i] =  re[ i + start]  * scale;
+    		}
+		}
+
+    	float[] im = new  float[windowSize];     
+        fft(data_, im);
+        for (int j = 0; j < windowSize; j++)
+        {
+    	      final float r = data_[j] / windowFunctionSum * 2;
+    	      final float i = im[j] / windowFunctionSum * 2;
+    	      data_[j] = (float) (r * r + i * i);
+        }
+        return data_;
   }
   
-  private void fft( float re[],  float im[])
+  private void fft(float re[],  float im[])
   {
-		int n = re.length;
-		int last = n - 1;
+		final int n = re.length;
+		final int last = n - 1;
 		for (int i = 0; i < last; ++i)
 		{
-			int j = Tj[i];
+			final int j = Tj[i];
 			if (i < j)
 			{
-				 float temp = re[j];
+				final float temp = re[j];
 				re[j] = re[i];
 				re[i] = temp;
 			}
 		}
 
 		int localN = 0;
-		for(int m = 1; m <= bits; m++)
+		for(int m = 1; m <= bits; ++m)
 		{
-			localN = 1 << m;
+			 localN = 1 << m;
 			 float Wjk_r = 1;
 			 float Wjk_i = 0;
-			 float Wj_r = Wj_rs[m];
-			 float Wj_i = Wj_is[m];
-			int nby2 = localN >>  1;			
+			 final float Wj_r = Wj_rs[m];
+			 final float Wj_i = Wj_is[m];
+			 final int nby2 = localN >>  1;			
 			for (int j = 0; j < nby2; ++j)
 			{
 				for (int k = j; k < n; k += localN)
 				{
-					int id = k + nby2;
-					 float tempr = Wjk_r * re[id] - Wjk_i * im[id];
-					 float tempi = Wjk_r * im[id] + Wjk_i * re[id];
+					final int id = k + nby2;					
+					final float tempr = Wjk_r * re[id] - Wjk_i * im[id];
+					final float tempi = Wjk_r * im[id] + Wjk_i * re[id];
 					re[id] = re[k] - tempr;
 					im[id] = im[k] - tempi;
 					re[k] += tempr;
 					im[k] += tempi;
 				}
-				 float wtemp = Wjk_r;
+				final float wtemp = Wjk_r;
 				Wjk_r = Wj_r * Wjk_r  - Wj_i * Wjk_i;
 				Wjk_i = Wj_r * Wjk_i  + Wj_i * wtemp;
 			}
 		}
 		
 	}
-
 
 	/** Computes the power spectrum of a real sequence (in place).
 	 *  @param re the real input and output data; length must be a power of 2
@@ -220,17 +218,7 @@ public final class FFT
    */
   private void normalizedPowerFFT( float[] re)
   {
-	  float[] im = new  float[re.length];
-    double r, i;
 
-    fft(re, im);
-
-    for (int j = 0; j < re.length; j++)
-    {
-      r = re[j] / windowFunctionSum * 2;
-      i = im[j] / windowFunctionSum * 2;
-      re[j] = (float) (r * r + i * i);
-    }
   }
 
 
@@ -510,22 +498,6 @@ private void blackmanNuttall(int size)
   {
     return windowFunctionType;
   }
-
-	/** Applies a window function to an array of data, storing the result in
-	 *  the data array.
-	 *  Performs a dot product of the data and window arrays.
-	 *  @param data   the array of input data, also used for output
-	 *  @param window the values of the window function to be applied to data
-	 */
-	private void applyWindowFunction( float[] data)
-	{
-		if(windowFunctionType != WND_NONE)
-	    {
-	      for (int i = 0; i < data.length; i++)
-	        data[i] *= windowFunction[i];
-	    }
-	}
-	
 	
 
   private void calculateWindowFunctionSum()

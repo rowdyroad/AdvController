@@ -321,7 +321,8 @@ public class DTW {
     public float EuclideanDistance(float[] x, float[] y) {
 
         float sum = 0;
-        if(x.length != y.length){
+        if(x.length != y.length)
+        {
             throw new RuntimeException("Given array lengths were not equal."); 
         }
         int d = x.length;

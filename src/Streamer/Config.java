@@ -1,6 +1,9 @@
 package Streamer;
 
+import Common.SourceParser;
 import Common.Utils;
+import Common.JSON.JSONException;
+import Common.JSON.JSONObject;
 
 public class Config {
 
@@ -10,46 +13,72 @@ public class Config {
 		if (instance_ == null)
 		{
 			instance_ = new Config();
-		}
-		
+		}		
 		return instance_;
 	}
 	
-	private String external_program_ = new String();
-	private double fingerprint_equivalency_ = 1 ;
-	private String promos_path_;
-	private String source_;
-	private int sample_rate_ = 44100;
-	private int channels_ = 2;
-	private int left_min_frequency_ = 20;
-	private int left_max_frequency_ = 20000;
-	private int right_min_frequency_ = 20;
-	private int right_max_frequency_ = 20000;
-	private String left_key_;
-	private String right_key_;
+	class Channel
+	{
+		String key_;
+		int min_frequency_;
+		int max_frequency_;
+		
+		public Channel(String key, int min, int  max)
+		{
+			key_ = key;
+			min_frequency_ = min;
+			max_frequency_ = max;
+		}
+		public Channel(JSONObject json)
+		{
+			try {
+				key_ = json.getString("key");
+				min_frequency_ = json.getInt("min_frequency");
+				max_frequency_ = json.getInt("max_frequency");
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		public String Key()
+		{
+			return key_;
+		}
+		public int MinFrequency()
+		{
+			return min_frequency_;
+		}
+		public int MaxFrequency()
+		{
+			return max_frequency_;
+		}
+	}
+	
+	
+	private String result_program_ = new String();
+	private String storage_;
+	private SourceParser source_;
+	private Channel left_ = null;
+	private Channel right_ = null;
 	private boolean ignore_empty_stream_ = false;	
-	private float frame_equip_ = 0.1f;
-	private int overlapped_coef_ = 1;
+	private float overlapped_coef_ = 1.0f;
+	private int ignored_errors_ = 0; 
+	private float  equals_ = 1.0f;
+
 	private Config()
 	{
 		try
 		{
-			external_program_ = Common.Config.Instance().GetProperty("ep", "");
-			sample_rate_ = Integer.parseInt(Common.Config.Instance().GetProperty("sr", Integer.toString(sample_rate_)));
-			channels_ = Integer.parseInt(Common.Config.Instance().GetProperty("cc", Integer.toString(channels_)));			
-			source_ = Common.Config.Instance().GetProperty("s","soundcard");
-			promos_path_ = Common.Config.Instance().GetProperty("st", ".");
-			promos_path_ = (promos_path_.isEmpty()) ? "./" : Utils.CompletePath(promos_path_);
-			fingerprint_equivalency_ =  Double.parseDouble(Common.Config.Instance().GetProperty("e", Double.toString(fingerprint_equivalency_)));
-			left_min_frequency_ = Common.Config.Instance().GetProperty("lf", left_min_frequency_);
-			left_max_frequency_ = Common.Config.Instance().GetProperty("LF", left_max_frequency_);
-			right_min_frequency_ = Common.Config.Instance().GetProperty("rf",right_min_frequency_);
-			right_max_frequency_ = Common.Config.Instance().GetProperty("RF",right_max_frequency_);
-			left_key_ = Common.Config.Instance().GetProperty("lk","");
-			right_key_ = Common.Config.Instance().GetProperty("rk","");
-			ignore_empty_stream_ = Boolean.parseBoolean(Common.Config.Instance().GetProperty("i", Boolean.toString(ignore_empty_stream_)));
-			frame_equip_ = Float.parseFloat(Common.Config.Instance().GetProperty("fe", Float.toString(frame_equip_)));
-			overlapped_coef_ =  Common.Config.Instance().GetProperty("oc",overlapped_coef_);
+			result_program_ = Common.Config.Instance().Get("result_program", "");
+			source_ = new SourceParser(Common.Config.Instance().Get("source", ""));
+			storage_ = Common.Config.Instance().Get("storage", "");
+			ignore_empty_stream_ = Common.Config.Instance().GetBool("ignore_empty_stream",ignore_empty_stream_);
+			overlapped_coef_ =  (float) Common.Config.Instance().GetDouble("overlapped_coef",overlapped_coef_);			
+			left_ = new Channel(Common.Config.Instance().JSON().getJSONObject("channels").getJSONObject("left"));
+			right_ = new Channel(Common.Config.Instance().JSON().getJSONObject("channels").getJSONObject("right"));			
+			ignored_errors_ = Common.Config.Instance().GetInt("ignored_errors",ignored_errors_);
+			equals_ =  (float) Common.Config.Instance().GetDouble("equals",equals_);			
 		} 
 		catch (Exception e)
 		{
@@ -57,72 +86,47 @@ public class Config {
 		}
 	}
 	
-	public String LeftKey()
+	public Channel LeftChannel()
 	{
-		return left_key_;
+		return left_;
 	}
 	
-	public String RightKey()
+	public Channel RightChannel()
 	{
-		return right_key_;
+		return right_;
 	}
 	
 	public boolean IgnoreEmptyStream()
 	{
 		return ignore_empty_stream_;
 	}
-	public int Channels()
-	{
-		return channels_;
-	}
 	
-	public int LeftMinFrequency()
-	{
-		return left_min_frequency_;
-	}
-	
-	public int LeftMaxFrequency()
-	{
-		return left_max_frequency_;
-	}
-
-	public int RightMinFrequency()
-	{
-		return left_min_frequency_;
-	}
-	
-	public int RightMaxFrequency()
-	{
-		return left_max_frequency_;
-	}
-	
-	public int SampleRate()
-	{
-		return sample_rate_;
-	}
-	public String Source()
+	public SourceParser Source()
 	{
 		return source_;
 	}
-	public  String ExternalProgram()
+	
+	public  String ResultProgram()
 	{
-		return external_program_;
-	}
-	public String PromosPath()
-	{
-		return promos_path_;
-	}
-	public double FingerPrintEquivalency()
-	{
-		return fingerprint_equivalency_;
-	}
-	public float FrameEquip()
-	{
-		return frame_equip_;
+		return result_program_;
 	}
 	
-	public int OverlappedCoef()
+	public String Storage()
+	{
+		return storage_;
+	}
+	
+	public float OverlappedCoef()
 	{
 		return overlapped_coef_;
+	}
+	
+	public int IgnoredErrors()
+	{
+		return ignored_errors_;
+	}
+	public float Equals()
+	{
+		return equals_;
 	}
 }

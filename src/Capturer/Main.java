@@ -13,7 +13,7 @@ public class Main {
 
 	private static void usage()
 	{
-		Dbg.Info("Usage: %s\n-c <config_file>\n-f <min_frequency>\n-F <max_frequency> \n-p <wav_file>,<result_file>,<promo_id>,...\n-b <buffer_count>", Main.class.getName());
+		Dbg.Info("Usage: %s\n-c <config_file>\n-C <channel>\n-f <min_frequency>\n-F <max_frequency> \n-p <wav_file>,<result_file>,<promo_id>,...\n-b <buffer_count>", Main.class.getName());
 		System.exit(1);		
 	}
 	
@@ -22,17 +22,22 @@ public class Main {
 		if (args.length  == 0)
 		{
 			usage();
-		}
-		
-		Common.Config.Arguments = new Args(args);
-		Dbg.LogLevel = Common.Config.Instance().LogLevel();
-		
-		if (Config.Instance().Promos().isEmpty())
+		}		
+		Args.Init(args);
+		final String config  = Args.Instance().Get("c", "config.ini");
+		if (!config.isEmpty())			
+			Common.Config.Init(config, "capturer");		
+		Dbg.LogLevel = Common.Config.Instance().LogLevel();		
+		final String promo = Args.Instance().Get("p", "");
+		final int min_frequency = Args.Instance().Get("f", 20);
+		final int max_frequency = Args.Instance().Get("F", 20000);
+		final String channel  = Args.Instance().Get("C","left");
+		if (promo.isEmpty())
 		{
 			usage();
 		}
 	
-		String[]  promos = Config.Instance().Promos().split(",");
+		String[]  promos = promo.split(",");
 		if (promos.length % 3 != 0)
 		{
 			usage();
@@ -41,8 +46,8 @@ public class Main {
 		try
 		{
 			Dbg.Info("Min Frequency: %d\nMaxFrequency: %d\nBuffer Count: %d\nFiles to convert: %d",
-								Config.Instance().MinFrequency(),
-								Config.Instance().MaxFrequency(),
+								min_frequency,
+								max_frequency,
 								Common.Config.Instance().BufferCount(),
 								promos.length / 3);
 			
@@ -53,7 +58,7 @@ public class Main {
 				String result_file = promos[i+1];
 				String promo_id = promos[i+2];
 				Dbg.Info("Filename: %s\nResult file:%s\nPromoID: %s", wav_file, result_file, promo_id);	
-				Capturer capt = new Capturer(wav_file,  promo_id, Config.Instance().MinFrequency(), Config.Instance().MaxFrequency(), Common.Config.Instance().BufferCount());
+				Capturer capt = new Capturer(wav_file,  promo_id, channel, min_frequency, max_frequency, Common.Config.Instance().BufferCount());
 				capt.Process().Serialize(result_file);
 				Dbg.Info("Time to work: %d ms", System.currentTimeMillis() - time);
 			}
