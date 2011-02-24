@@ -229,171 +229,19 @@ public class Summator implements Catcher, Loader.Processor {
 			}
 			else
 			{
-					if (--fw.errors < 0)
+					if (--fw.errors == -1)
 					{
 						Dbg.Debug("rem: %s[%d][%d] - %f/%f",fw.fpw.fp.Id(), fw.id, fw.index,  fw.last, x);
 						fw.removed = true;
 						removes_.add(fw);
 					}
-			}
-			
-			/*if (time_ > fw.offset_end)
-			{
-				if (fw.last > 0.1f)
-				{
-					submitResult(fw);
-				}
-				else
-				{
-					if (fw.errors <= 0)
-					{
-						Dbg.Debug("rem: %s[%d][%d] - %f",fw.fpw.fp.Id(), fw.id, fw.index, fw.last);
-						removes_.add(fw);
-						continue;
-					}							
-					Dbg.Debug("err: %s[%d][%d] - %f %d",fw.fpw.fp.Id(), fw.id, fw.index, fw.last, fw.errors);
-					--fw.errors;							
-				}
-				continue;
-			}
-						
-			
-			final float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);				
-			if (x < fw.last)
-			{						
-				if (fw.has_max)
-				{										
-						if (fw.last > 0.1f)
-						{							
-							submitResult(fw);
-						}
-						else
-						{
-							if (fw.errors <= 0)
-							{
-								Dbg.Debug("rem: %s[%d][%d] - %f %f",fw.fpw.fp.Id(), fw.id, fw.index, fw.last,x);
-								removes_.add(fw);
-								continue;
-							}			
-							Dbg.Debug("err: %s[%d][%d] - %f %d",fw.fpw.fp.Id(), fw.id, fw.index, fw.last, fw.errors);
-							--fw.errors;							
-						}
-						
-						fw.has_max = false;						
-				}
-			}
-			else
-			{	
-				fw.maxed_time =  time_;
-				fw.has_max = true;
-			}
-			fw.last = x;*/
-			
-			
+			}			
 		}
-			
-			
-	
 		waiters_.removeAll(removes_);
 		Collections.shuffle(waiters_);
 		removes_.clear();
 		time_+=timeoffset;
 		return true;
-	//	Dbg.Info("%f",total_ / totals_);
-	/*	FingerPrintWrapper max_fpw = null;
-		float max = 0;
-		
-		for (FingerPrintWrapper fpw: fingerPrints_)
-		{			
-			final float x = dtw_.measure(fpw.fp.Get(0), mfcc);
-			if (x > 0.1f && x > max)
-			{
-				max = x;
-				max_fpw = fpw;
-			}
-		}
-		
-		if (max_fpw !=null)
-		{
-			FrameWaiter fw = new FrameWaiter(max_fpw, time_, 1, max);		
-			Dbg.Debug("new: %s[%d] %f", max_fpw.fp.Id(), fw.id,  max);
-			if (max_fw == null)
-			{
-				max_fw = fw;			
-			}
-			else
-			{
-				if (max_fw.total_equip < fw.total_equip)
-				{
-					max_fw = fw;
-				}
-			}			
-			waiters_.add(fw);
-		}
-		
-		removes_.clear();
-		
-		for (int i = 0; i < waiters_.size() - 1; ++i)
-		{
-			FrameWaiter fw = waiters_.get(i);		
-			if (time_  ==  fw.next_time)
-			{
-				final float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);
-				if (x > 0.1f)
-				{
-					Dbg.Debug("next[%d]: %s[%d] %f\t%f %f",fw.index,fw.fpw.fp.Id(),fw.id, x,fw.equip, fw.total_equip);				
-				}
-				else
-				{
-						if (--fw.errors < 0)
-						{
-							Dbg.Debug("rem[%d]: %s[%d] %f - %f",fw.index,fw.fpw.fp.Id(),fw.id, x, fw.total_equip);				
-							removes_.add(fw);
-							continue;
-						}
-						else
-						{
-							Dbg.Debug("error[%d]: %s[%d] - %d",fw.index, fw.fpw.fp.Id(),fw.id, fw.errors);
-						}				
-				}
-				
-				fw.Next(time_,x);				
-				if (max_fw == null)
-				{
-					max_fw = fw;			
-				}
-				else
-				{
-					if (max_fw.total_equip < fw.total_equip)
-					{
-						max_fw = fw;
-					}
-				}	
-				
-				if (fw.index >= fw.fpw.fp.Frames() * Config.Instance().Equals())
-				{					
-					if (max_fw == fw)
-					{
-						Dbg.Info("!!! res[%d]: %s[%d]  %f",fw.index,fw.fpw.fp.Id(),fw.id, fw.total_equip);						
-						resulter_.OnFound(fw.fpw.fp.Id(), fw.timestamp, System.currentTimeMillis(),  fw.total_equip);
-						max_fw = null;
-						waiters_.clear();
-						removes_.clear();
-						break;
-					}
-					
-					removes_.add(fw);
-				}				
-			}
-			else
-			{
-					if (time_ > fw.next_time)
-					{
-						removes_.add(fw);
-					}
-			}
-		}		*/
-
 	}
 
 	@Override
