@@ -25,7 +25,7 @@ public class ResultSubmiter implements Resulter {
 			@Override
 			public void run()
 			{
-				while (!Main.done || has_)
+				while (!Main.IsDone() || has_)
 				{					
 					if (has_)
 					{				
