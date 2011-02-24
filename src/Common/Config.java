@@ -9,7 +9,7 @@ import Common.JSON.JSONObject;
 public  class Config {
 	
 	private int log_level_ = Dbg.Error | Dbg.Warning | Dbg.Info;
-	private int kill_gate_ = 0;
+	private float kill_gate_ = Float.NEGATIVE_INFINITY;
 	private static Config instance_ = null;
 	public static Args Arguments = null;	
 	private int buffer_count_ = 100;
@@ -64,10 +64,10 @@ public  class Config {
 		{
 			  buffer_count_ = GetInt("buffer_count",buffer_count_);
 			  log_level_ = GetInt("log_level", log_level_);			  
-			  kill_gate_  = GetInt("kill_gate", kill_gate_);			  
-			  if (kill_gate_ != 0)
+			  kill_gate_  = (float) GetDouble("kill_gate", kill_gate_);			  
+			  if (kill_gate_ !=   Float.NEGATIVE_INFINITY)
 			  {
-				  kill_gate_ = (int) Math.pow(10,  kill_gate_ / 20 );  
+				  kill_gate_ =  (float)Math.pow(10,  kill_gate_ / 20 );  
 			  }			  
 			  fft_window_size_ = GetInt("fft_window_size",fft_window_size_);
 		}

@@ -74,9 +74,24 @@ public class Config {
 			source_ = new SourceParser(Common.Config.Instance().Get("source", ""));
 			storage_ = Common.Config.Instance().Get("storage", "");
 			ignore_empty_stream_ = Common.Config.Instance().GetBool("ignore_empty_stream",ignore_empty_stream_);
-			overlapped_coef_ =  (float) Common.Config.Instance().GetDouble("overlapped_coef",overlapped_coef_);			
-			left_ = new Channel(Common.Config.Instance().JSON().getJSONObject("channels").getJSONObject("left"));
-			right_ = new Channel(Common.Config.Instance().JSON().getJSONObject("channels").getJSONObject("right"));			
+			overlapped_coef_ =  (float) Common.Config.Instance().GetDouble("overlapped_coef",overlapped_coef_);
+			try
+			{
+				left_ = new Channel(Common.Config.Instance().JSON().getJSONObject("channels").getJSONObject("left"));
+			}
+			catch (Exception e)
+			{
+				left_ = null;
+			}
+			
+			try
+			{
+				right_ = new Channel(Common.Config.Instance().JSON().getJSONObject("channels").getJSONObject("right"));
+			}
+			catch (Exception e)
+			{
+				right_ = null;
+			}
 			ignored_errors_ = Common.Config.Instance().GetInt("ignored_errors",ignored_errors_);
 			equals_ =  (float) Common.Config.Instance().GetDouble("equals",equals_);			
 		} 

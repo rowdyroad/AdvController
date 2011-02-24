@@ -39,7 +39,7 @@ public class ResultSubmiter implements Resulter {
 							}
 					}					
 					try {
-						Thread.sleep(200);
+						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -53,8 +53,7 @@ public class ResultSubmiter implements Resulter {
 	{		
 		if (id_ != null)
 		{
-			Dbg.Info("!!! %s %f",id_, equ_);
-			
+			Dbg.Info("### %s %f",id_, equ_);			
 			run();
 		}		
 		id_ = null;
@@ -66,14 +65,13 @@ public class ResultSubmiter implements Resulter {
 		program = program.replaceAll("\\{key\\}", key_);
 		program = program.replaceAll("\\{id\\}", id);
 		program = program.replaceAll("\\{probability\\}",String.format("%d",equivalence));
-		return program.replaceAll("\\{timestamp\\}",  String.valueOf(timestamp));
+		return program.replaceAll("\\{timestamp\\}",  String.valueOf(timestamp / 1000));
 	}
 	
 	private int run()
 	{
 		String path = prepareForRun(Config.Instance().ResultProgram(),id_, begin_,  Math.round(equ_  * 100));
-		Dbg.Debug(path);
-		
+		Dbg.Info(path);		
 		try {
 			Process p = Runtime.getRuntime().exec(path);
 			int ret = p.waitFor();

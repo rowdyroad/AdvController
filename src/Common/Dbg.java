@@ -29,8 +29,8 @@ public class Dbg {
 				String data = String.format(format, args);				
 				Arrays.fill(pad,' ');
 				String str_pad = new String(pad);
-				str_pad = "\n" + str_pad + "\t";								
-				data = frmt+"\t"+data.replaceAll("\n",str_pad)+"\n";
+				str_pad = System.getProperty("line.separator") + str_pad + "\t";								
+				data = frmt+"\t"+data.replaceAll("\n",str_pad) + System.getProperty("line.separator");
 				Output.write(data.getBytes());
 			} catch (IOException e) 
 			{
