@@ -38,6 +38,9 @@ public class Main {
 		final int min_frequency = Args.Instance().Get("f", 20);
 		final int max_frequency = Args.Instance().Get("F", 20000);
 		final String channel  = Args.Instance().Get("C","left");
+		final int kg = Args.Instance().Get("k",Integer.MIN_VALUE);		
+		final float kill_gate =  (kg == Integer.MIN_VALUE) ? Float.NEGATIVE_INFINITY :  (float)Math.pow(10,  kg / 20 );  
+		
 		if (promo.isEmpty())
 		{
 			usage();
@@ -73,10 +76,7 @@ public class Main {
 				i+=3;
 			}
 		}
-		
-		
-		
-		
+	
 		if (promos.length % 3 != 0)
 		{
 			usage();
@@ -97,7 +97,7 @@ public class Main {
 				String result_file = promos[i+1];
 				String promo_id = promos[i+2];
 				Dbg.Info("Filename: %s\nResult file:%s\nPromoID: %s", wav_file, result_file, promo_id);	
-				Capturer capt = new Capturer(wav_file,  promo_id, channel, min_frequency, max_frequency, Common.Config.Instance().BufferCount());
+				Capturer capt = new Capturer(wav_file,  promo_id, channel, min_frequency, max_frequency, kill_gate, Common.Config.Instance().BufferCount());
 				capt.Process().Serialize(result_file);
 				Dbg.Info("Time to work: %d ms", System.currentTimeMillis() - time);
 			}

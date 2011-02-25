@@ -52,7 +52,6 @@ public class Summator implements Catcher, Loader.Processor {
 		public FrameWaiter(FingerPrintWrapper fpw, long time, int index, float equip)
 		{
 			Set(fpw,time,index,equip);
-			//Utils.Dbg("%d, offsets:%d  %d (%d) %d  %d",off, this.offset.get(0),this.offset.get(1),this.offset.get(2),this.offset.get(3),this.offset.get(4));
 		}
 		
 		private long PrevTime(long time)

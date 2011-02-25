@@ -19,8 +19,8 @@ public class Settings
 		encoding_ = format.getEncoding();
 		sample_size_ = format.getSampleSizeInBits() / 8;
 		is_big_endian_ = format.isBigEndian();
-		window_size_ = Utils.GreaterBinary(sample_rate_ );
-		Dbg.Info(this);
+		window_size_ = Utils.GreaterBinary(sample_rate_ );	
+		Dbg.Debug(this);
 	}
 	
 	public Boolean IsBigEndian()
@@ -43,8 +43,6 @@ public class Settings
 		return sample_rate_ ;
 	}
 	
-
-
 	public Integer WindowSize()
 	{
 		return window_size_;

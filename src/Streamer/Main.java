@@ -19,20 +19,19 @@ class Main {
 	
 	public static void main (String args []) throws Exception 
 	{
-		
+		long time  = System.currentTimeMillis();
 		try
 		{
+			Dbg.Info("Started");
 			Args.Init(args);
 			Common.Config.Init(Args.Instance().Get("c","streamer.ini"), "streamer");		
-			Dbg.LogLevel = Common.Config.Instance().LogLevel();		
-			long time  = System.currentTimeMillis();
+			Dbg.LogLevel = Common.Config.Instance().LogLevel();							
 			new Streamer().Process();	
-			Dbg.Info("\n\n%d",System.currentTimeMillis() - time);
-			Dbg.Info("==============================");
 		}
 		finally
 		{
 			done_ = true;
+			Dbg.Info("Stopped [ %d ms ]",System.currentTimeMillis() - time);
 		}
 	}
 

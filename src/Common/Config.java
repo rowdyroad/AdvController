@@ -8,13 +8,12 @@ import Common.JSON.JSONObject;
 
 public  class Config {
 	
+	
 	private int log_level_ = Dbg.Error | Dbg.Warning | Dbg.Info;
-	private float kill_gate_ = Float.NEGATIVE_INFINITY;
 	private static Config instance_ = null;
 	public static Args Arguments = null;	
 	private int buffer_count_ = 100;
 	private int fft_window_size_ = 8192;
-	
 	private static String config_filename_ = null;
 	private static String config_group_ = null;
 	static public Config Instance()
@@ -30,13 +29,14 @@ public  class Config {
 	{
 		config_filename_ = filename;
 		config_group_ = group;
-	}
-	
+	}	
 	private JSONObject json_;
+	
 	public JSONObject JSON()
 	{
 		return json_;
 	}
+	
 	private Config(String filename, String group)
 	{
 		if (filename == null || group == null)
@@ -44,7 +44,8 @@ public  class Config {
 			return;
 		}
 		
-		try {
+		try 
+		{
 			json_ = new JSONObject(new File(filename)).getJSONObject(group);
 		}
 		catch (JSONException e)
@@ -55,6 +56,7 @@ public  class Config {
 		{
 			Dbg.Warn("Couldn't load config filename '%s'. Load defaults.\n(%s)",filename,e.getMessage());					
 		}
+		
 		if (json_ == null)
 		{
 			return;
@@ -63,31 +65,21 @@ public  class Config {
 		try
 		{
 			  buffer_count_ = GetInt("buffer_count",buffer_count_);
-			  log_level_ = GetInt("log_level", log_level_);			  
-			  kill_gate_  = (float) GetDouble("kill_gate", kill_gate_);			  
-			  if (kill_gate_ !=   Float.NEGATIVE_INFINITY)
-			  {
-				  kill_gate_ =  (float)Math.pow(10,  kill_gate_ / 20 );  
-			  }			  
+			  Dbg.LogLevel = log_level_ = GetInt("log_level", log_level_); 
 			  fft_window_size_ = GetInt("fft_window_size",fft_window_size_);
+			  Dbg.Debug("Buffer Count: %d\nLog Level: %d\nFFT Window Size: %d\n",buffer_count_,log_level_, fft_window_size_);			  			
 		}
 		 catch (Exception e) 
 		 {
 		
 		  }
 	}
-		
+
 	public int BufferCount()
 	{
 		return buffer_count_;
 		
 	}
-	
-	public float KillGate()
-	{
-		return kill_gate_;
-	}
-	
 	
 	public int LogLevel()
 	{

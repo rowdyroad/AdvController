@@ -36,29 +36,25 @@ public class Streamer
 		{
 			throw new Exception("Nothing to read at the start of streamer");
 		}
-
-		
-
-		source_ = new Source(stream, settings_, Common.Config.Instance().BufferCount());			
-
+		source_ = new Source(stream, settings_, Common.Config.Instance().BufferCount(), Config.Instance().LeftChannel().KillGate(),Config.Instance().RightChannel().KillGate());			
 	}
 
 	public void Process()
 	{
-		if (Config.Instance().LeftChannel() != null)
+		if (Config.Instance().LeftChannel().IsExists())
 		{
-			Dbg.Info("Add left channel [%s]",Config.Instance().LeftChannel().Key());
-			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().LeftChannel().Key()));		
-			loader_.AddProcessor(Config.Instance().LeftChannel().Key(), sm);
+			Dbg.Info("Add left channel [%s]",Config.Instance().LeftChannel().Id());
+			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().LeftChannel().Id()));		
+			loader_.AddProcessor(Config.Instance().LeftChannel().Id(), sm);
 			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().LeftChannel().MinFrequency(),Config.Instance().LeftChannel().MaxFrequency()));
 		}
 		
-		if (Config.Instance().RightChannel() != null)
+		if (Config.Instance().RightChannel().IsExists())
 		{
-			Dbg.Info("Add right channel [%s]",Config.Instance().RightChannel().Key());
-			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().RightChannel().Key()));		
-			loader_.AddProcessor(Config.Instance().RightChannel().Key(), sm);
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().RightChannel().MinFrequency(),Config.Instance().RightChannel().MaxFrequency()));
+			Dbg.Info("Add right channel [%s]",Config.Instance().RightChannel().Id());
+			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().RightChannel().Id()));		
+			loader_.AddProcessor(Config.Instance().RightChannel().Id(), sm);
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().RightChannel().MinFrequency(), Config.Instance().RightChannel().MaxFrequency()));
 		}
 
 		Dbg.Info("Listening...");		

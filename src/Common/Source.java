@@ -17,8 +17,6 @@ public class Source implements Runnable {
 	public static class SourceException extends Exception
 	{
 		private static final long serialVersionUID = 5707762550983986760L;
-		
-		
 		public  enum ErrorType
 		{
 			SAMPLE_RATE,
@@ -82,13 +80,15 @@ public class Source implements Runnable {
 	private byte[] read_buffer_;
 	private byte[] process_buffer_;
 	private OutputStream out_;
+	private float left_kill_gate_ = Float.NEGATIVE_INFINITY;
+	private float right_kill_gate_ = Float.NEGATIVE_INFINITY;
 	
-	public Source(InputStream stream, Settings settings, int buffer_count)
+	public Source(InputStream stream, Settings settings, int buffer_count, float left_kill_gate, float right_kill_gate)
 	{
-		this(stream,settings,buffer_count,null);
+		this(stream,settings,buffer_count, left_kill_gate, right_kill_gate, null);
 	}
 	
-	public Source(InputStream stream, Settings settings, int buffer_count, OutputStream out)
+	public Source(InputStream stream, Settings settings, int buffer_count, float left_kill_gate, float right_kill_gate, OutputStream out)
 	{
 		stream_ = stream;
 		frame_size_ = settings.Channels() * settings.SampleSize();
@@ -98,6 +98,8 @@ public class Source implements Runnable {
 		ring_buffer_ = new RingBuffer(read_chunk_size_* buffer_count);
 		settings_ = settings;
 		out_ = out;
+		left_kill_gate_ = left_kill_gate;
+		right_kill_gate_ = right_kill_gate;
 	}
 
 
@@ -175,11 +177,10 @@ public class Source implements Runnable {
 		}
 
 		if (left_recv != null)
-		{
-			
+		{			
 			for (int i = 0; i < left_recv.size(); ++i)
 			{
-				left_recv.get(i).OnSamplesReceived(max_left  > Common.Config.Instance().KillGate() ? left : null);
+				left_recv.get(i).OnSamplesReceived(max_left  > left_kill_gate_ ? left : null);
 			}
 		}
 
@@ -187,7 +188,7 @@ public class Source implements Runnable {
 		{
 			for (int i = 0; i < right_recv.size(); ++i)
 			{
-				right_recv.get(i).OnSamplesReceived(max_right > Common.Config.Instance().KillGate() ? right : null);
+				right_recv.get(i).OnSamplesReceived(max_right > right_kill_gate_ ? right : null);
 			}
 		}
 	}

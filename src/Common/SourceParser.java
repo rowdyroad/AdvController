@@ -97,7 +97,6 @@ public class SourceParser
 		if (source.startsWith("file://"))
 		{
 			File file = new File(source.substring(7));
-			Dbg.Info("Loading from %s", file.getPath());
 			if (! file.exists())
 			{
 				Dbg.Error("Source file not found");

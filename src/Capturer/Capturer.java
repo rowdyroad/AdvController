@@ -20,12 +20,11 @@ public class Capturer implements Frequencier.Catcher
 	FingerPrint fp_;
 	private Settings settings_;
 	
-	public Capturer(String filename, String id, String channel, int min_frequency, int max_frequency, int buffer_count) throws Exception
+	public Capturer(String filename, String id, String channel, int min_frequency, int max_frequency, float kill_gate,  int buffer_count) throws Exception
 	{
 		AudioInputStream stream = AudioSystem.getAudioInputStream(new File(filename));
 		settings_ = new Settings(stream.getFormat());
-		source_ = new Source(stream, settings_,buffer_count);
-		
+		source_ = new Source(stream, settings_,buffer_count, kill_gate,kill_gate);		
 		
 		if (channel == "right")
 		{
@@ -34,8 +33,7 @@ public class Capturer implements Frequencier.Catcher
 		else
 		{
 			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(),min_frequency, max_frequency));		
-		}
-		
+		}		
 		fp_ = new FingerPrint(id);		
 		Dbg.Info("FrameLength: %d",stream.getFrameLength());
 	}
