@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.List;
@@ -23,7 +25,9 @@ import Streamer.DTW;
 
 import Calculation.FFT;
 import Calculation.math.Matrix;
+import Capturer.Capturer;
 import Common.Dbg;
+import Common.FingerPrint;
 import Common.Overlapper;
 import Common.Settings;
 import Common.Source;
@@ -257,42 +261,133 @@ public class Main {
 		}
 	}
 	
+
 	
-	private static void DTWTest()
-	{
-		DTW dtw = new DTW(3);
-		
-		float[][] a = { {0,1,1},{2,3,3}, {0,1,1}};
-		float[][] b = { {0,1,1},{2,3,3}, {0,1,1}};
-		
-		Dbg.Debug(dtw.measure(a,b));
-	}
-	
-	public static void main (String args []) throws UnsupportedAudioFileException, IOException
-	{		
-		
-		AudioInputStream w = AudioSystem.getAudioInputStream(new File("d:\\work\\test_with_madgl.wav"));
+	private static void writeShort(RandomAccessFile file, short data) throws IOException {
+        short theData = (short) (((data >>> 8) & 0x00FF) | ((data << 8) & 0xFF00));
+        file.writeShort(theData);
+    }
+
+    private void writeRiff(RandomAccessFile file, short[] data, int numBytes) throws IOException {
+        byte[] theData = new byte[numBytes];
+        int yc = 0;
+        for (int y = 0; y < numBytes; y = y + 2) {
+            theData[y] = (byte) (data[yc] & 0x00FF);
+            theData[y + 1] = (byte) ((data[yc++] >>> 8) & 0x00FF);
+        }
+        file.write(theData, 0, numBytes);
+    }
+
+    private static void writeInt(RandomAccessFile file, int data) throws IOException {
+        short theDataL = (short) ((data >>> 16) & 0x0000FFFF);
+        short theDataR = (short) (data & 0x0000FFFF);
+        short theDataLI = (short) (((theDataL >>> 8) & 0x00FF) | ((theDataL << 8) & 0xFF00));
+        short theDataRI = (short) (((theDataR >>> 8) & 0x00FF) | ((theDataR << 8) & 0xFF00));
+        int theData = ((theDataRI << 16) & 0xFFFF0000)
+                | (theDataLI & 0x0000FFFF);
+        file.writeInt(theData);
+    }
+    
+    public static float last = Float.NEGATIVE_INFINITY;
+    
+	public static void main (String args []) throws Exception
+	{				
+		/*AudioInputStream w = AudioSystem.getAudioInputStream(new File("d:\\work\\test_with_madgl.wav"));
 		AudioInputStream wo = AudioSystem.getAudioInputStream(new File("d:\\work\\test_wo_madgl.wav"));
 		AudioInputStream test = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\test.wav"));
-		AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\temp\\pi.wav"));
 		AudioInputStream lz_rec = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\z\\lz_rec.wav"));
-		AudioInputStream lz = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\z\\lz.wav"));
+		AudioInputStream lz = AudioSystem.getAudioInputStream(new File("d:\\temp\\ptrn\\z\\lz.wav"));*/
 		
-		Dbg.Info("lz");
-		Window  a = new Window();
-		AudioInputStream stream =lz;		
-		Settings settings = new Settings(stream.getFormat());				
-		Source source = new Source(stream,settings,100);		
-		source.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, a);		
-		source.Process();
+		 /*
+		Capturer capt = new Capturer("d:\\work\\rec\\2\\e_no.wav", "1","left",20,20000,0.001f,100);
+		FingerPrint fp = capt.Process();
+
+		Capturer capt1 = new Capturer("d:\\work\\rec\\2\\e_rec.wav", "1","left",20,20000,0.001f,100);
+		FingerPrint fp1 = capt1.Process();
+
 		
-		Dbg.Info("lz_rec");
-		Window b = new Window();
-		stream = lz_rec;		
-		settings = new Settings(stream.getFormat());				
-		source = new Source(stream,settings,100);		
-		source.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, b);		
-		source.Process();
+		
+		for (int c = 0; c < Math.min(fp.Frames(), fp1.Frames()); ++c)
+		{
+			final float a[][] = fp.Get(c);
+			final float b[][] = fp1.Get(c);
+			
+			float tt = 0.0f;
+			for (int j = 0; j < 19; ++j)
+			{
+				float t = 0.0f;
+				for (int i = 0 ;i < a.length; ++i)
+				{				
+					t += Math.pow(a[i][j] - b[i][j],2);
+				}
+				tt+=Math.sqrt(t / a.length);				
+			}
+			
+			
+			
+			Dbg.Info("Mean: %f   DTW:%f",  tt / 19, DTW.measure(15, a,b));
+			
+		}*/
+		final RandomAccessFile  file = new RandomAccessFile("d:\\temp\\result3 .wav", "rw");	
+		file.setLength(0);
+		
+		final AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\work\\rec\\2\\e_no.wav"));
+		Source s = new Source(pi, new Settings(pi.getFormat()), 100, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
+		
+		byte[] sign = {'R','I','F','F','0','0','0','0','W','A','V','E','f','m','t',' '};
+		file.write(sign);
+		writeInt(file,16);
+		writeShort(file, (short)1);
+		writeShort(file, (short)1);
+		writeInt(file, (int)pi.getFormat().getSampleRate());
+		writeInt(file, (int)(pi.getFormat().getSampleRate() * 2));
+		writeShort(file,(short) 2);
+		writeShort(file,(short)16);
+		byte[] data = {'d','a','t','a','0','0','0','0'};		
+		file.write(data); 
+		
+		int headerSize = (int) file.length();
+		Dbg.Info(headerSize);
+		
+		s.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, new Source.AudioReceiver() {			
+			@Override
+			public void OnSamplesReceived(float[] db) 
+			{
+				int k = 32;
+				final int step = db.length / k;
+				
+				
+				for (int i = 0 ;i <  db.length; i+=step)
+				{
+					float m = 0.0f;
+					for (int j =0 ; j <step; ++j)
+					{
+						if (db[i+j] < 0 ) continue;						
+						m += 20 * Math.log(db[i + j]);
+					}					
+					m /=  step;			
+					
+					for (int j =0 ; j <step; ++j)
+					{						
+							short  p   =  (short) (Math.pow(Math.E, m / 20) *  Short.MAX_VALUE );						
+							try {							
+								writeShort(file, p);
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+					}
+				}
+			}
+		});		
+		s.Process();
+		
+		Dbg.Info((int) file.length());
+		file.seek(headerSize - 4);
+		writeInt(file, (int)(file.length() - headerSize));		
+		file.seek(4);
+		writeInt(file, (int) file.length() - 8);
+		file.close();
 		//Limits.Process(a, b);
 		
 		
@@ -302,6 +397,7 @@ public class Main {
 			for (int j = 0; j < b.data_.size(); ++j)			
 			{
 				int r = a.rms(a.data_.get(i), b.data_.get(j));
+				
 				if (r <= 5 )
 				{
 					Dbg.Info("%d / %d", i, j);

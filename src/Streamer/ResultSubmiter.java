@@ -62,8 +62,8 @@ public class ResultSubmiter implements Resulter {
 	}
 	private String prepareForRun(String program, String id, long timestamp, int equivalence)
 	{
-		program = program.replaceAll("\\{key\\}", key_);
-		program = program.replaceAll("\\{id\\}", id);
+		program = program.replaceAll("\\{id\\}", key_);
+		program = program.replaceAll("\\{promo\\}", id);
 		program = program.replaceAll("\\{probability\\}",String.format("%d",equivalence));
 		return program.replaceAll("\\{timestamp\\}",  String.valueOf(timestamp / 1000));
 	}

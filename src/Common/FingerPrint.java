@@ -96,14 +96,12 @@ public class FingerPrint implements Serializable,Comparable<FingerPrint> {
 		
 		for (int i = 0 ; i < mfcc_.size(); ++i)
 		{
-			str+=String.format("%d [%d / %.03f]:\n", i,times_.get(i),means_.get(i));
-			
+			str+=String.format("%d [%d / %.03f]:\n", i,times_.get(i),means_.get(i));			
 			for (int j = 0; j < mfcc_.get(i).length; ++ j)
-			{
-				str+="";
+			{				
 				for (int k = 0; k <  mfcc_.get(i)[j].length; ++k)
 				{
-					str+=String.format("%.03f\t",  mfcc_.get(i)[j][k]);
+					str+=String.format("%.03f; ",  mfcc_.get(i)[j][k]);
 				}
 				str+="\n";
 			}

@@ -139,7 +139,6 @@ public class Summator implements Catcher, Loader.Processor {
 						removes_.add(fwz);
 					}
 				}
-				Dbg.Debug("rem: %s[%d][%d] - %f",fw.fpw.fp.Id(), fw.id, fw.index, fw.fpw.last);
 				fw.removed = true;
 				removes_.add(fw);			
 		}
@@ -216,24 +215,10 @@ public class Summator implements Catcher, Loader.Processor {
 			}
 			
 			final float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);
-			
-			
-			if (x > frame_equals_ )
-			{				
-				if (x > fw.last)
-				{
-					fw.last = x;
-					fw.maxed_time = time_;
-				}
-			}
-			else
+			if (x > fw.last)
 			{
-					if (--fw.errors == -1)
-					{
-						Dbg.Debug("rem: %s[%d][%d] - %f/%f",fw.fpw.fp.Id(), fw.id, fw.index,  fw.last, x);
-						fw.removed = true;
-						removes_.add(fw);
-					}
+				fw.last = x;
+				fw.maxed_time = time_;
 			}			
 		}
 		waiters_.removeAll(removes_);

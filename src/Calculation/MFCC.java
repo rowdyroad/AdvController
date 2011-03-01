@@ -55,60 +55,8 @@ public class MFCC
   private int halfWindowSize;
   private float[] ret;
   private static float log10 = (float) (10 * (1 / Math.log(10))); // log for base 10 and scale by factor 10
- 
-  
-  /**
-   * Creates a new MFCC object with default window size of 512 for the given
-   * sample rate. The overlap of the windows is fixed at 50 percent. The number
-   * of coefficients is set to 20 and the first coefficient is in use. The
-   * 40 mel-filters are place in the range from 20 to 16000 Hz.
-   *
-   * @param sampleRate float samples per second, must be greater than zero; not
-   *                         whole-numbered values get rounded
-   * @throws IllegalArgumentException raised if method contract is violated
-   */
-  public MFCC(float sampleRate) throws IllegalArgumentException
-  {
-    this(sampleRate, 512, 20, true, 20.0f, 16000.0f, 40);
-  }
- 
-  /**
-   * Creates a new MFCC object. 40 mel-filters are place in the range from 20 to
-   * 16000 Hz.
-   *
-   * @param sampleRate float samples per second, must be greater than zero; not
-   *                         whole-numbered values get rounded
-   * @param windowSize int size of window; must be 2^n and at least 32
-   * @param numberCoefficients int must be grate or equal to 1 and smaller than
-   *                               the number of filters
-   * @param useFirstCoefficient boolean indicates whether the first coefficient
-   *                                    of the dct process should be used in the
-   *                                    mfcc feature vector or not
-   * @throws IllegalArgumentException raised if method contract is violated
-   */
-  public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient) throws IllegalArgumentException
-  {
-    this(sampleRate, windowSize, numberCoefficients, useFirstCoefficient, 20.0f, 16000.0f, 40);
-  }
 
-  /**
-   * Creates a new MFCC object. 40 mel-filters are place in the range from 20 to
-   * 16000 Hz.
-   *
-   * @param sampleRate float samples per second, must be greater than zero; none
-   *                         integer values get rounded
-   * @param windowSize int size of window; must be 2^n and at least 32
-   * @param numberCoefficients int must be grate or equal to 1 and smaller than
-   *                               the number of filters
-   * @param useFirstCoefficient boolean indicates whether the first coefficient
-   *                                    of the dct process should be used in the
-   *                                    mfcc feature vector or not
-   * @param minFreq float start of the interval to place the mel-filters in
-   * @param maxFreq float end of the interval to place the mel-filters in
-   * @param numberFilters int number of mel-filters to place in the interval
-   * @throws IllegalArgumentException raised if method contract is violated
-   */
-  public MFCC(float sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, float minFreq, float maxFreq, int numberFilters) throws IllegalArgumentException
+  public MFCC(int sampleRate, int windowSize, int numberCoefficients, boolean useFirstCoefficient, int minFreq, int maxFreq, int numberFilters) throws IllegalArgumentException
   {
     //check for correct window size
     if(windowSize < 32)
@@ -162,14 +110,8 @@ public class MFCC
     //store filter weights and DCT matrix due to performance reason
     melFilterBanks = getMelFilterBanks();
     dctMatrix = getDCTMatrix();
-
     ret = new float[melFilterBanks.getRowDimension()];
-
-    //create power fft object
-    scale  = (float) (Math.pow(10, 96 / 20));
-    normalizedPowerFFT = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize, scale, FFT.WND_BLACKMAN_NUTTALL);
- 
-    //compute rescale factor to rescale and normalize at once (default is 96dB = 2^16)
+    normalizedPowerFFT = new FFT(FFT.FFT_NORMALIZED_POWER, windowSize,FFT.WND_HAMMING, sampleRate, minFreq, maxFreq);
   }
 
 
@@ -409,7 +351,7 @@ public class MFCC
 
     //process each window of this audio segment
     for(int i = 0, pos = 0; pos < input.length - hopSize; i++, pos+=hopSize)
-      mfcc[i] = processWindow(input, pos);
+    	mfcc[i] = processWindow(input, pos);
 
     return mfcc;
   }
@@ -430,21 +372,18 @@ public class MFCC
 	  
 	  final float[] buffer = normalizedPowerFFT.transform(window,start);
 	  	  	 
-	  final int stt = (int) Math.floor(minFreq * windowSize / sampleRate);
-	  final int stp = (int) Math.ceil(maxFreq * windowSize / sampleRate);
-	  
 	  for (int i = 0; i < ret.length; ++i)
 	  {
 		  ret[i] = 0;
-		  for (int j = 0; j <halfWindowSize;  ++j)
+		  for (int j = 0; j < buffer.length;  ++j)
 		  {
 			  ret[i] += melFilterBanks.A[i][j] * buffer[j];
 		  }
-		  ret[i] = (ret[i] < 1 ) ? 0 :  (float) (log10 * Math.log(ret[i]));
+		  ret[i] = (ret[i] < 1.0f ) ? 0f :  (float) (log10 * Math.log(ret[i]));
 	  }
 	  
 	  float [] result =  new  float[dctMatrix.getRowDimension()];
-		
+	  
 	  for (int i = 0; i < result.length; ++i)
 	  {
 		  result[i] = 0;
@@ -452,9 +391,7 @@ public class MFCC
 		  {
 			  result[i] += dctMatrix.A[i][j] * ret[j]; 
 		  }
-		  result[i] = Math.round(result[i]);
-	  }
-	  
+	  }	  
 	  return result;
   }
 }
