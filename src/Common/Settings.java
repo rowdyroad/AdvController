@@ -5,12 +5,12 @@ import javax.sound.sampled.AudioFormat.Encoding;
 
 public class Settings 
 {
-	private int sample_rate_;
-	private int channels_;
-	private int sample_size_;
-	private int window_size_;
-	private Encoding encoding_;
-	private boolean is_big_endian_;
+	private final int sample_rate_;
+	private final int channels_;
+	private final int sample_size_;
+	private final int window_size_;
+	private final Encoding encoding_;
+	private final boolean is_big_endian_;
 	
 	public Settings(AudioFormat format)
 	{
@@ -23,27 +23,27 @@ public class Settings
 		Dbg.Debug(this);
 	}
 	
-	public Boolean IsBigEndian()
+	public final boolean IsBigEndian()
 	{
 		return is_big_endian_;
 	}
 	
-	public Integer Channels()
+	public final int Channels()
 	{
 		return channels_;
 	}
 	
-	public Integer SampleSize()
+	public final int SampleSize()
 	{
 		return sample_size_;
 	}
 	
-	public Integer SampleRate()
+	public final int SampleRate()
 	{
 		return sample_rate_ ;
 	}
 	
-	public Integer WindowSize()
+	public final int WindowSize()
 	{
 		return window_size_;
 	}

@@ -1,5 +1,7 @@
 package Calculation;
 
+import java.util.Arrays;
+
 import Common.Dbg;
 
 public final class FFT
@@ -42,9 +44,13 @@ public final class FFT
 
 	private final int minFrequencyIndex_;
 	private final int maxFrequencyIndex_;
+	
+	private float[] im_;
 
+	private FloatFFT_1D fft_;
 	public FFT(int transformationType, int windowSize, int windowFunctionType, int sampleRate, int minFrequency, int maxFrequency)
 	{
+		fft_ = new FloatFFT_1D(windowSize);
 		bits = (int)Math.rint(Math.log(windowSize) / Math.log(2));
 		Wj_rs = new  float[bits+1];
 		Wj_is = new  float[bits+1];	
@@ -86,37 +92,59 @@ public final class FFT
 			//create window function buffer and set window function
 			this.windowFunction = new  float[windowSize];
 			this.data_ = new float[windowSize];
+
+			 im_ = new  float[windowSize];     
 			this.result_ = new float[maxFrequencyIndex_ - minFrequencyIndex_];
 			setWindowFunction(windowFunctionType, windowSize);
 	}
 
-	public float[] transform( float[] re,  int start)
+
+	
+	public float[] transform( float[] src,  int start)
 	{
-		if(re.length < windowSize)
+		if(src.length < windowSize)
 			throw new IllegalArgumentException("Data array is smaller than FFT window size");	
 
 		float max = 0.0f;
 		for (int i = 0; i < windowSize; ++i)
 		{
-			max = Math.max(Math.abs(re[i + start]), max);				
+			max = Math.max(Math.abs(src[i + start]), max);				
 		}
-		
 		for (int i = 0; i < windowSize; ++i)
 		{				
-			data_[i] = ( re[ i + start] / max ) * windowFunction[i] * Integer.MAX_VALUE;
+			data_[i] = ( src[ i + start] / max ) * windowFunction[i] * Integer.MAX_VALUE;
 		}
-
-		float[] im = new  float[windowSize];     
-		fft(data_, im);
-
-		for (int j = 0; j < result_.length; j++)
+		
+	//	Arrays.fill(im_, 0.0f);
+	//	fft(data_, im_);
+		
+		float[] res = new float[windowSize / 2];
+		fft_.realForward(data_);
+		
+		for (int i = 0; i < res.length; i++)
+		{
+			final int idx = 2 * i;
+			final float re = data_[idx] / windowFunctionSum * 2;
+			final float im= data_[idx + 1] / windowFunctionSum * 2;
+			res[i] = (float) (re * re  + im * im);
+		}
+		
+		return res;
+				
+	/*	for (int j = 0; j < result_.length; j++)
 		{	
 			final int k = j + minFrequencyIndex_; 
-			final float r = data_[k] / windowFunctionSum * 2;
-			final float i = im[k] / windowFunctionSum * 2;
+			final float r = data_[2*k] / windowFunctionSum * 2;
+			final float i = data_[2*k + 1] / windowFunctionSum * 2;
 			result_[j] = (float) (r * r  + i * i);
 		}
-		return result_;
+		
+		return result_;*/
+		
+		
+		
+		
+		
 	}
 
 	private void fft(float re[],  float im[])

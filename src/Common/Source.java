@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Vector;
@@ -65,9 +66,9 @@ public class Source implements Runnable {
 		RIGHT_CHANNEL
 	}
 
-	private int frame_size_;
-	private int read_chunk_size_;
-	private Settings settings_;
+	private final int frame_size_;
+	private final int read_chunk_size_;
+	private final Settings settings_;
 	private Map<Channel, Vector<AudioReceiver>> receivers_ = new TreeMap<Channel, Vector<AudioReceiver>>();
 	
 	public Settings GetSettings()
@@ -80,8 +81,8 @@ public class Source implements Runnable {
 	private byte[] read_buffer_;
 	private byte[] process_buffer_;
 	private OutputStream out_;
-	private float left_kill_gate_ = Float.NEGATIVE_INFINITY;
-	private float right_kill_gate_ = Float.NEGATIVE_INFINITY;
+	private final float left_kill_gate_;
+	private final float right_kill_gate_;
 	
 	public Source(InputStream stream, Settings settings, int buffer_count, float left_kill_gate, float right_kill_gate)
 	{
@@ -138,63 +139,83 @@ public class Source implements Runnable {
 
 	private void process(byte[] buf, int len)
 	{
-		float[] left = new  float[settings_.WindowSize()];
-		float[] right = new  float[settings_.WindowSize()];
-		int j = 0;
-		
-		float max_left = 0;
-		float  max_right = 0;
-		
+		final int channels  = settings_.Channels();
+		final int window_size = settings_.WindowSize();		
+		final float length = len - frame_size_;
+		final int sample_size = settings_.SampleSize();				
 		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
 		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
 		
-		for (int i = 0; i < len - frame_size_; i+=frame_size_, j++)
+		float[] left = null;
+		float[] right = null;
+		float max_left = 0.0f;
+		float max_right = 0.0f;
+		
+		int j =  0;
+		if (channels == 2)
 		{
-			if (settings_.Channels() == 2)
+			if (left_recv != null && right_recv!=null)
 			{
-				if (left_recv != null)
-				{					
-					left[j] = convertFromAr(buf, i);					
+				left = new float[window_size];
+				right = new float[window_size];
+				for (int i = 0; i < length; i+=frame_size_, j++)
+				{				
+						final float left_sample  = convertFromAr(buf, i);
+						final float right_sample = convertFromAr(buf, i + sample_size);
+						left[j] = left_sample;					
+						right[j] =  right_sample;
+						max_left = Math.max(max_left, Math.abs(left_sample));
+						max_right = Math.max(max_right, Math.abs(right_sample));						
 				}				
-				if (right_recv != null)
-				{
-					right[j] = convertFromAr(buf, i + settings_.SampleSize());
+		
+			}
+			else if (left_recv!=null)
+			{
+				left = new float[window_size];
+				for (int i = 0; i < length; i+=frame_size_, j++)
+				{				
+						final float left_sample  = convertFromAr(buf, i);
+						left[j] = left_sample;					
+						max_left = Math.max(max_left, Math.abs(left_sample));
 				}
 			}
 			else
-			{	
-				left[j] = right[j] = convertFromAr(buf, i);
-			}
-			//Dbg.Info("%02X %02X = %f",buf[i],buf[i+1],left[j]);
-			
-			max_left = Math.max(max_left, left[j]);
-			max_right = Math.max(max_right, right[j]);
-		}
-		
-		for (int i =j; i< settings_.WindowSize() ; ++i)
-		{			
-			left[i] = right[i] = 0;
-		}
-
-		if (left_recv != null)
-		{			
-			for (int i = 0; i < left_recv.size(); ++i)
 			{
-				left_recv.get(i).OnSamplesReceived(max_left  > left_kill_gate_ ? left : null);
+				right = new float[window_size];
+				for (int i = 0; i < length; i+=frame_size_, j++)
+				{				
+					final float right_sample = convertFromAr(buf, i + sample_size);
+					right[j] =  right_sample;
+					max_right = Math.max(max_right, Math.abs(right_sample));			
+				}				
 			}
 		}
-
-		if (right_recv != null)
+		else
 		{
-			for (int i = 0; i < right_recv.size(); ++i)
-			{
-				right_recv.get(i).OnSamplesReceived(max_right > right_kill_gate_ ? right : null);
+			left = right = new float[window_size];
+			for (int i = 0; i < length; i+=frame_size_, j++)
+			{	
+				final float sample  = convertFromAr(buf, i);
+				left[j] =  sample;
+				max_left = max_right = Math.max(max_left, Math.abs(sample));			
 			}
 		}
+	
+		if (left != null && left_recv != null)
+			for (AudioReceiver recv : left_recv)
+			{
+					recv.OnSamplesReceived(max_left  > left_kill_gate_ ? left : null);
+			}
+		
+		if (right != null && right_recv	 != null)
+			for (AudioReceiver recv : right_recv)
+			{
+				recv.OnSamplesReceived(max_right  > right_kill_gate_ ? right : null);
+			}
 	}
 
 	int readed = 0;
-	public  void Process()
+	public  void Process()	
 	{
 		if (receivers_.isEmpty()) 
 		{

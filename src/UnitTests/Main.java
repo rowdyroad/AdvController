@@ -263,10 +263,7 @@ public class Main {
 	
 
 	
-	private static void writeShort(RandomAccessFile file, short data) throws IOException {
-        short theData = (short) (((data >>> 8) & 0x00FF) | ((data << 8) & 0xFF00));
-        file.writeShort(theData);
-    }
+	
 
     private void writeRiff(RandomAccessFile file, short[] data, int numBytes) throws IOException {
         byte[] theData = new byte[numBytes];
@@ -278,16 +275,7 @@ public class Main {
         file.write(theData, 0, numBytes);
     }
 
-    private static void writeInt(RandomAccessFile file, int data) throws IOException {
-        short theDataL = (short) ((data >>> 16) & 0x0000FFFF);
-        short theDataR = (short) (data & 0x0000FFFF);
-        short theDataLI = (short) (((theDataL >>> 8) & 0x00FF) | ((theDataL << 8) & 0xFF00));
-        short theDataRI = (short) (((theDataR >>> 8) & 0x00FF) | ((theDataR << 8) & 0xFF00));
-        int theData = ((theDataRI << 16) & 0xFFFF0000)
-                | (theDataLI & 0x0000FFFF);
-        file.writeInt(theData);
-    }
-    
+
     public static float last = Float.NEGATIVE_INFINITY;
     
 	public static void main (String args []) throws Exception
@@ -328,66 +316,19 @@ public class Main {
 			Dbg.Info("Mean: %f   DTW:%f",  tt / 19, DTW.measure(15, a,b));
 			
 		}*/
-		final RandomAccessFile  file = new RandomAccessFile("d:\\temp\\result3 .wav", "rw");	
-		file.setLength(0);
 		
-		final AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\work\\rec\\2\\e_no.wav"));
+		
+		final AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\work\\148.wav"));
 		Source s = new Source(pi, new Settings(pi.getFormat()), 100, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 		
-		byte[] sign = {'R','I','F','F','0','0','0','0','W','A','V','E','f','m','t',' '};
-		file.write(sign);
-		writeInt(file,16);
-		writeShort(file, (short)1);
-		writeShort(file, (short)1);
-		writeInt(file, (int)pi.getFormat().getSampleRate());
-		writeInt(file, (int)(pi.getFormat().getSampleRate() * 2));
-		writeShort(file,(short) 2);
-		writeShort(file,(short)16);
-		byte[] data = {'d','a','t','a','0','0','0','0'};		
-		file.write(data); 
+	
+		WAVMaker m = new WAVMaker("d:\\work\\res.wav",pi.getFormat());
 		
-		int headerSize = (int) file.length();
-		Dbg.Info(headerSize);
-		
-		s.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, new Source.AudioReceiver() {			
-			@Override
-			public void OnSamplesReceived(float[] db) 
-			{
-				int k = 32;
-				final int step = db.length / k;
-				
-				
-				for (int i = 0 ;i <  db.length; i+=step)
-				{
-					float m = 0.0f;
-					for (int j =0 ; j <step; ++j)
-					{
-						if (db[i+j] < 0 ) continue;						
-						m += 20 * Math.log(db[i + j]);
-					}					
-					m /=  step;			
-					
-					for (int j =0 ; j <step; ++j)
-					{						
-							short  p   =  (short) (Math.pow(Math.E, m / 20) *  Short.MAX_VALUE );						
-							try {							
-								writeShort(file, p);
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-					}
-				}
-			}
-		});		
+		s.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, m);		
 		s.Process();
 		
-		Dbg.Info((int) file.length());
-		file.seek(headerSize - 4);
-		writeInt(file, (int)(file.length() - headerSize));		
-		file.seek(4);
-		writeInt(file, (int) file.length() - 8);
-		file.close();
+		m.Save();
+		
 		//Limits.Process(a, b);
 		
 		
