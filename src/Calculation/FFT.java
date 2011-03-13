@@ -105,33 +105,14 @@ public final class FFT
 		if(src.length < windowSize)
 			throw new IllegalArgumentException("Data array is smaller than FFT window size");	
 
-		float max = 0.0f;
-		for (int i = 0; i < windowSize; ++i)
-		{
-			max = Math.max(Math.abs(src[i + start]), max);				
-		}
 		for (int i = 0; i < windowSize; ++i)
 		{				
-			data_[i] = ( src[ i + start] / max ) * windowFunction[i] * Integer.MAX_VALUE;
+			data_[i] = ( src[ i + start]  ) * windowFunction[i] * Short.MAX_VALUE;
 		}
 		
-	//	Arrays.fill(im_, 0.0f);
-	//	fft(data_, im_);
-		
-		float[] res = new float[windowSize / 2];
 		fft_.realForward(data_);
 		
-		for (int i = 0; i < res.length; i++)
-		{
-			final int idx = 2 * i;
-			final float re = data_[idx] / windowFunctionSum * 2;
-			final float im= data_[idx + 1] / windowFunctionSum * 2;
-			res[i] = (float) (re * re  + im * im);
-		}
-		
-		return res;
-				
-	/*	for (int j = 0; j < result_.length; j++)
+	for (int j = 0; j < result_.length; j++)
 		{	
 			final int k = j + minFrequencyIndex_; 
 			final float r = data_[2*k] / windowFunctionSum * 2;
@@ -139,12 +120,7 @@ public final class FFT
 			result_[j] = (float) (r * r  + i * i);
 		}
 		
-		return result_;*/
-		
-		
-		
-		
-		
+		return result_;
 	}
 
 	private void fft(float re[],  float im[])

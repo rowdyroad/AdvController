@@ -5,6 +5,7 @@ import java.util.Vector;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 
+import Common.Chunker;
 import Common.Dbg;
 import Common.FingerPrint;
 import Common.Settings;
@@ -25,14 +26,16 @@ public class Capturer implements Frequencier.Catcher
 		AudioInputStream stream = AudioSystem.getAudioInputStream(new File(filename));
 		settings_ = new Settings(stream.getFormat());
 		source_ = new Source(stream, settings_,buffer_count, kill_gate,kill_gate);		
+		final int silent_time  = (int) (stream.getFormat().getSampleRate() / 2);
+		final int total_time = (int) (stream.getFormat().getSampleRate()  * 60);
 		
 		if (channel == "right")
 		{
-			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(), min_frequency, max_frequency));
+			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Chunker(silent_time, total_time, kill_gate, new Frequencier(this,settings_,settings_.WindowSize(), min_frequency, max_frequency)));
 		}
 		else
 		{
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(this,settings_,settings_.WindowSize(),min_frequency, max_frequency));		
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL,  new Chunker(silent_time, total_time,kill_gate,new Frequencier(this,settings_,settings_.WindowSize(),min_frequency, max_frequency)));		
 		}		
 		fp_ = new FingerPrint(id);		
 		Dbg.Info("FrameLength: %d",stream.getFrameLength());
@@ -52,8 +55,11 @@ public class Capturer implements Frequencier.Catcher
 	@Override
 	public boolean OnReceived(float[][] frequency, long timeoffset) 
 	{
-		fp_.Add(frequency, time_);
-		time_+=timeoffset;
+		if (frequency!= null)
+		{
+			fp_.Add(frequency, time_);
+			time_+=timeoffset;
+		}
 		return true;
 	}
 

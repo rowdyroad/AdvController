@@ -1,6 +1,7 @@
 package Calculation;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import Calculation.math.Matrix;
 import Common.Dbg;
@@ -347,12 +348,12 @@ public class MFCC
         throw new IllegalArgumentException("Input data must be multiple of hop size (windowSize/2).");
 
     //create return array with appropriate size
-    float[][] mfcc = new  float[(input.length/hopSize)-1][numberCoefficients];
+    float[][] mfcc = new  float[(input.length/hopSize)-1][];
 
     //process each window of this audio segment
     for(int i = 0, pos = 0; pos < input.length - hopSize; i++, pos+=hopSize)
     	mfcc[i] = processWindow(input, pos);
-
+    
     return mfcc;
   }
 

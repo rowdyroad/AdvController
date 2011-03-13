@@ -42,4 +42,11 @@ public class Liner implements Source.AudioReceiver
 		//Dbg.Info("----");		
 	}
 
+
+	@Override
+	public void OnCompleted() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

@@ -57,6 +57,7 @@ public class Source implements Runnable {
 	public interface AudioReceiver
 	{
 		public void OnSamplesReceived( float[] db);
+		public void OnCompleted();
 	}
 
 
@@ -137,6 +138,29 @@ public class Source implements Runnable {
 		//return (res - Config.Instance().KillGate() <= 0) ? 0 : res;
 	} 
 
+	private void complete()
+	{
+		Vector<AudioReceiver> left_recv = receivers_.get(Channel.LEFT_CHANNEL);
+		Vector<AudioReceiver> right_recv = receivers_.get(Channel.RIGHT_CHANNEL);
+
+		if (left_recv != null)
+		{	
+			for (AudioReceiver recv : left_recv)
+			{
+					recv.OnCompleted();
+			}
+			
+		}
+		
+		if (right_recv	 != null)
+		{
+			for (AudioReceiver recv : right_recv)
+			{
+				recv.OnCompleted();
+			}
+		}
+	}
+	
 	private void process(byte[] buf, int len)
 	{
 		final int channels  = settings_.Channels();
@@ -151,13 +175,15 @@ public class Source implements Runnable {
 		float max_left = 0.0f;
 		float max_right = 0.0f;
 		
+		final int r_len = len / (sample_size * channels);
+				
 		int j =  0;
 		if (channels == 2)
 		{
 			if (left_recv != null && right_recv!=null)
 			{
-				left = new float[window_size];
-				right = new float[window_size];
+				left = new float[r_len];
+				right = new float[r_len];
 				for (int i = 0; i < length; i+=frame_size_, j++)
 				{				
 						final float left_sample  = convertFromAr(buf, i);
@@ -171,7 +197,7 @@ public class Source implements Runnable {
 			}
 			else if (left_recv!=null)
 			{
-				left = new float[window_size];
+				left = new float[r_len];
 				for (int i = 0; i < length; i+=frame_size_, j++)
 				{				
 						final float left_sample  = convertFromAr(buf, i);
@@ -181,7 +207,7 @@ public class Source implements Runnable {
 			}
 			else
 			{
-				right = new float[window_size];
+				right = new float[r_len];
 				for (int i = 0; i < length; i+=frame_size_, j++)
 				{				
 					final float right_sample = convertFromAr(buf, i + sample_size);
@@ -192,7 +218,7 @@ public class Source implements Runnable {
 		}
 		else
 		{
-			left = right = new float[window_size];
+			left = right = new float[len / sample_size ];
 			for (int i = 0; i < length; i+=frame_size_, j++)
 			{	
 				final float sample  = convertFromAr(buf, i);
@@ -202,16 +228,20 @@ public class Source implements Runnable {
 		}
 	
 		if (left != null && left_recv != null)
+		{	
 			for (AudioReceiver recv : left_recv)
 			{
-					recv.OnSamplesReceived(max_left  > left_kill_gate_ ? left : null);
+					recv.OnSamplesReceived(left);
 			}
+		}
 		
 		if (right != null && right_recv	 != null)
+		{
 			for (AudioReceiver recv : right_recv)
 			{
-				recv.OnSamplesReceived(max_right  > right_kill_gate_ ? right : null);
+				recv.OnSamplesReceived( right);
 			}
+		}
 	}
 
 	int readed = 0;
@@ -244,6 +274,10 @@ public class Source implements Runnable {
 					{
 						if (ring_buffer_.getAvailable()  < read_chunk_size_)
 						{
+							final int len =  ring_buffer_.getAvailable();
+							ring_buffer_.get(process_buffer_,0,len);
+							process(process_buffer_, len);						
+							complete();
 							break;
 						}
 					}

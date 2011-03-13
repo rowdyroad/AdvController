@@ -94,7 +94,7 @@ public class Loader implements Runnable {
 						Dbg.Debug("Loading  %s..",file.getName());
 						FingerPrint nfp = FingerPrint.Deserialize(file);
 						fps.put(file.getName(), nfp);
-						Dbg.Debug("Loaded %s\n",nfp.Id());
+						Dbg.Debug("Loaded %s Length: %d\n",nfp.Id(),nfp.Time());
 
 						LinkedList<Processor> ps = processors_.get(dir.getName());
 						if (ps != null)

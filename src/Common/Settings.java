@@ -11,7 +11,7 @@ public class Settings
 	private final int window_size_;
 	private final Encoding encoding_;
 	private final boolean is_big_endian_;
-	
+	private final AudioFormat format_;
 	public Settings(AudioFormat format)
 	{
 		channels_ = format.getChannels();
@@ -19,10 +19,14 @@ public class Settings
 		encoding_ = format.getEncoding();
 		sample_size_ = format.getSampleSizeInBits() / 8;
 		is_big_endian_ = format.isBigEndian();
-		window_size_ = Utils.GreaterBinary(sample_rate_ );	
+		window_size_ = Utils.GreaterBinary(sample_rate_);
+		format_ = format;
 		Dbg.Debug(this);
 	}
-	
+	public final AudioFormat Format()
+	{
+		return format_;
+	}
 	public final boolean IsBigEndian()
 	{
 		return is_big_endian_;

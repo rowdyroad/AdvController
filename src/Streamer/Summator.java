@@ -17,7 +17,7 @@ public class Summator implements Catcher, Loader.Processor {
 	private class FingerPrintWrapper
 	{
 		float last = 0;
-		long maxed_time;
+		long maxed_time = 0;
 		boolean has_max = false;
 		FingerPrint fp;
 		public FingerPrintWrapper(FingerPrint fp)
@@ -46,6 +46,7 @@ public class Summator implements Catcher, Loader.Processor {
 		int errors = Config.Instance().IgnoredErrors(); 
 		float equip;
 		float total_equip;
+		long next_time;
 		boolean removed = false;
 		FingerPrintWrapper fpw;
 		
@@ -64,12 +65,18 @@ public class Summator implements Catcher, Loader.Processor {
 			return (long) (time  + ( 1.0f + Config.Instance().OverlappedCoef())*  settings_.WindowSize());
 		}
 		
+		private long WindowNextTime(long time)
+		{
+			return (long)(time + settings_.WindowSize());
+		}
+		
 		public void Set(FingerPrintWrapper fpw, long time, int index, float equip)
 		{
 			id=++fw_id_;
 			this.fpw = fpw;
 			this.offset_begin = PrevTime(time);
 			this.offset_end = NextTime(time); 
+			this.next_time  = WindowNextTime(time);
 			this.index = index;
 			this.total = equip;
 			this.timestamp = System.currentTimeMillis();
@@ -85,6 +92,7 @@ public class Summator implements Catcher, Loader.Processor {
 			this.last  = 0;
 			this.offset_begin = PrevTime(time);
 			this.offset_end = NextTime(time); 
+			this.next_time = WindowNextTime(time);
 			this.equip = total / index;						
 			this.total_equip = this.total / this.fpw.fp.Frames();
 		}
@@ -156,15 +164,31 @@ public class Summator implements Catcher, Loader.Processor {
 			}
 			str+="\n";
 		}		
-		Dbg.Debug(str);
+		Dbg.Info(str);
 	}
 	
+	private long len = 0;
 	public boolean OnReceived(float[][] mfcc, long timeoffset) 
 	{		
-		int exists =  waiters_.size();
+		if (mfcc == null)
+		{
+			len = timeoffset;
+			waiters_.clear();
+			for (FingerPrintWrapper fpw: fingerPrints_)
+			{
+				fpw.has_max = false;
+				fpw.last = 0;
+				fpw.maxed_time = 0;
+			}
+			return true;
+		}
+		
+		FrameWaiter last = null;
 		Collections.shuffle(fingerPrints_);	
 		for (FingerPrintWrapper fpw: fingerPrints_)
-		{
+		{						
+			final float y = (len / fpw.fp.Time());			
+			if (y < 1 || y > 1.1) continue;
 			final float x = dtw_.measure(fpw.fp.Get(0), mfcc);	
 			if (x > frame_equals_)
 			{
@@ -174,8 +198,9 @@ public class Summator implements Catcher, Loader.Processor {
 							{
 								fpw.has_max = false;
 								FrameWaiter fw = new FrameWaiter(fpw, fpw.maxed_time, 1,fpw.last);																
-								Dbg.Debug("new: %s[%d] - %f/%f %d %d",fpw.fp.Id(),fw.id, fpw.last, x, fpw.maxed_time, time_);
+								Dbg.Debug("new: %s[%d] - %f/%f %d %d",fpw.fp.Id(),fw.id, fpw.last, x, fpw.maxed_time, time_);								
 								waiters_.add(fw);
+								fw = last;								
 							}
 					}
 					else
@@ -188,38 +213,26 @@ public class Summator implements Catcher, Loader.Processor {
 		}
 				
 		Iterator<FrameWaiter> it = waiters_.iterator();
-		int i = 0;
 		while (it.hasNext())
 		{
-			if (i++ >= exists) break;
+			FrameWaiter fw = it.next();
+			if (fw == last) break;
 			
-			FrameWaiter fw = it.next();				
-			if (fw.removed || time_ < fw.offset_begin)
-			{
-				continue;
+			if ( time_ ==  fw.next_time)
+			{	
+				final float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);			
+				if (x < frame_equals_)
+				{
+					fw.removed = true;
+					removes_.add(fw);
+				}
+				else
+				{
+					fw.maxed_time = time_;
+					fw.last = x;
+					submitResult(fw);
+				}
 			}
-			
-			if (time_ > fw.offset_end)
-			{
-					if (fw.last > frame_equals_)
-					{
-						submitResult(fw);
-					}
-					else
-					{
-						Dbg.Debug("rem: %s[%d][%d] - %f [%d  - %d]",fw.fpw.fp.Id(), fw.id, fw.index,  fw.last, fw.offset_begin, fw.offset_end);
-						fw.removed = true;
-						removes_.add(fw);									
-					}
-					continue;
-			}
-			
-			final float x = dtw_.measure(fw.fpw.fp.Get(fw.index), mfcc);
-			if (x > fw.last)
-			{
-				fw.last = x;
-				fw.maxed_time = time_;
-			}			
 		}
 		waiters_.removeAll(removes_);
 		Collections.shuffle(waiters_);

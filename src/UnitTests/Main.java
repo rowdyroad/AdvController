@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.List;
@@ -26,11 +28,13 @@ import Streamer.DTW;
 import Calculation.FFT;
 import Calculation.math.Matrix;
 import Capturer.Capturer;
+import Common.Chunker;
 import Common.Dbg;
 import Common.FingerPrint;
 import Common.Overlapper;
 import Common.Settings;
 import Common.Source;
+import Common.SourceParser;
 import Common.Utils;
 
 public class Main {
@@ -318,17 +322,78 @@ public class Main {
 		}*/
 		
 		
-		final AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\work\\148.wav"));
+		
+		
+		SourceParser sp = new SourceParser(args[0]);
+		int bytesPerSample =  sp.Format().getSampleSizeInBits()/8;
+		int channel  = (args[1] == "right") ? bytesPerSample: 0;		
+		byte[] b = new byte[10000];
+		while (true)
+		{
+			int len = sp.Stream().read(b);	
+			if (sp.Format().getChannels() == 2)
+			{
+				for (int i = 0; i < len; i+=sp.Format().getFrameSize())
+				{
+						System.out.write(b, i + channel , bytesPerSample);
+				}
+			}
+			else
+				System.out.write(b,0,len);
+		}
+		/*
+		final AudioInputStream pi = AudioSystem.getAudioInputStream(new File("d:\\work\\rec\\record4.wav"));
 		Source s = new Source(pi, new Settings(pi.getFormat()), 100, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 		
 	
-		WAVMaker m = new WAVMaker("d:\\work\\res.wav",pi.getFormat());
+		Chunker m = new Chunker(
+															(int)(pi.getFormat().getSampleRate() / 2), 
+															(int)(60  * pi.getFormat().getSampleRate()),
+															0.01f, 
+															new WAVMaker("d:\\work\\chuks\\4", pi.getFormat())
+															);
 		
-		s.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, m);		
+		s.RegisterAudioReceiver(Source.Channel.LEFT_CHANNEL, m);//new Marker("d:\\work\\chuks\\2\\eclipse.wav", pi.getFormat(),(short)10));		
 		s.Process();
+
 		
-		m.Save();
-		
+		try {
+			
+			int length = 100;
+			MappedByteBuffer out = 
+			      new RandomAccessFile("test.dat", "rw").getChannel() .map(FileChannel.MapMode.READ_WRITE, 0, length);
+			    for(int i = 0; i <  length; i++)
+			    {
+			      out.put((byte)'x');
+			      Thread.sleep(1000);
+			    }
+			    //System.out.println("Finished writing");
+			    //for(int i = length/2; i < length/2 + 6; i++)
+			      //System.out.print((char)out.get(i));
+	    /*
+	        // Create a read-write memory-mapped file
+	        FileChannel rwChannel = 
+	          new RandomAccessFile(file, "rw").getChannel();
+	          
+	        ByteBuffer writeonlybuffer= 
+	          rwChannel.map(FileChannel.MapMode.READ_WRITE, 
+	      0, (int)rwChannel.size());
+	    
+	        // Create a private (copy-on-write) memory-mapped file.
+	        // Any write to this channel results in a private 
+	        // copy of the data.
+	        FileChannel pvChannel = 
+	          new RandomAccessFile(file, "rw").getChannel();
+	          
+	        ByteBuffer privatebuffer = 
+	          roChannel.map(FileChannel.MapMode.READ_WRITE, 
+	      0, (int)rwChannel.size());
+	      
+	    } catch (IOException e) {
+	    	
+	    	e.printStackTrace();
+	    }
+		*/
 		//Limits.Process(a, b);
 		
 		

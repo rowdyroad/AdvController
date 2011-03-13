@@ -5,6 +5,7 @@ import java.io.InputStream;
 
 import javax.sound.sampled.AudioFormat;
 
+import Common.Chunker;
 import Common.Dbg;
 import Common.Frequencier;
 import Common.Settings;
@@ -41,12 +42,14 @@ public class Streamer
 
 	public void Process()
 	{
+		final int silent_time  = (int) (settings_.SampleRate() / 2);
+		final int total_time = (int) (settings_.SampleRate() * 60);
 		if (Config.Instance().LeftChannel().IsExists())
 		{
 			Dbg.Info("Add left channel [%s]",Config.Instance().LeftChannel().Id());
 			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().LeftChannel().Id()));		
 			loader_.AddProcessor(Config.Instance().LeftChannel().Id(), sm);
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().LeftChannel().MinFrequency(),Config.Instance().LeftChannel().MaxFrequency()));
+			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Chunker(silent_time, total_time, Config.Instance().LeftChannel().KillGate(),new Frequencier(sm, settings_,Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().LeftChannel().MinFrequency(),Config.Instance().LeftChannel().MaxFrequency())));
 		}
 		
 		if (Config.Instance().RightChannel().IsExists())
@@ -54,7 +57,7 @@ public class Streamer
 			Dbg.Info("Add right channel [%s]",Config.Instance().RightChannel().Id());
 			Summator sm = new Summator(settings_,new ResultSubmiter(Config.Instance().RightChannel().Id()));		
 			loader_.AddProcessor(Config.Instance().RightChannel().Id(), sm);
-			source_.RegisterAudioReceiver(Channel.LEFT_CHANNEL, new Frequencier(sm, settings_,Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().RightChannel().MinFrequency(), Config.Instance().RightChannel().MaxFrequency()));
+			source_.RegisterAudioReceiver(Channel.RIGHT_CHANNEL, new Chunker(silent_time, total_time,  Config.Instance().RightChannel().KillGate(),new Frequencier(sm, settings_, Math.round (settings_.WindowSize() * Config.Instance().OverlappedCoef()),Config.Instance().RightChannel().MinFrequency(), Config.Instance().RightChannel().MaxFrequency())));
 		}
 
 		Dbg.Info("Listening...");		
