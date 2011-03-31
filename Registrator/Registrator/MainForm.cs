@@ -7,7 +7,6 @@ using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
-using Registrator.WAV;
 using System.Reflection;
 
 namespace Registrator

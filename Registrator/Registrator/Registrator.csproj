@@ -100,11 +100,7 @@
       <DependentUpon>RenameForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Result.cs" />
-    <Compile Include="WAV\UtilityFunctions.cs" />
-    <Compile Include="WAV\WAVFile.cs" />
-    <Compile Include="WAV\WAVFileExceptions.cs" />
-    <Compile Include="WAV\WAVFileInfo.cs" />
-    <Compile Include="WAV\WAVFormat.cs" />
+    <Compile Include="WAVFileInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="bin\Debug\watermark.exe" />
