@@ -12,6 +12,10 @@ public class WAVFile
 	private String filename_;
 	private boolean opened_ = true;
 
+	public RandomAccessFile File()
+	{
+		return file_;
+	}
 	public WAVFile(String filename, AudioFormat format) throws IOException
 	{
 		filename_ = filename;
@@ -58,8 +62,13 @@ public class WAVFile
 		opened_= false;
 		
 	}
-	
-	private  void writeShort(short data) throws IOException {
+
+	public void writeBuf(byte[] buf, int index) throws IOException
+	{
+		file_.write(buf,index,2);
+	}
+	public  void writeShort(short data) throws IOException 
+	 {
         short theData = (short) (((data >>> 8) & 0x00FF) | ((data << 8) & 0xFF00));
         file_.writeShort(theData);
     }
