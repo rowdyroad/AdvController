@@ -50,7 +50,6 @@ public class Main {
 		{
 			Dbg.Info("\t%s",line.Mixer());
 		}		
-		
 		IDetector detector =  null;
 		try 
 		{

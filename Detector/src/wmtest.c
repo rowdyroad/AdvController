@@ -415,7 +415,7 @@ void load_buffer
 					}
 					en /= NFREQ; // en now contains block energy
 					gain = 1;
-					if (en < P) {
+					if (en != 0 && en < P) {
 						ga = (P-b)/(P-a);
 						gb = P*(b-a)/(P-a);
 						if (en > a) {
@@ -437,20 +437,28 @@ void load_buffer
 				// for faster hearing threshold computation.
 				hthres(Ht, xx, NFREQ, fs); 
 				// perform the comparison of audibility and go to dB domain
+				w = 0;
 				for (j = 0; j < NFREQ; j++) {
-					if (xx[j] > Ht[j]*dbcut && xx[j] > fdnoisefloor) Ht[j] = 1.;
+					if (xx[j] > Ht[j]*dbcut && xx[j] > fdnoisefloor) 
+					{
+						Ht[j] = 1.;
+						++w;
+					}
 					else Ht[j] = 0.;
 					xx[j] = 10.*log10(xx[j]);
 				}
 				// cepstrum filtering of the signal in dB
-				cepstrum_filtering(&xx[0], &yb[0]);
-				// copying the data into buffers
-				for (j = startfreq; j <= endfreq; j++) {
-					if (Ht[j] > 0.) {
-						cb->buffer[index+j-startfreq] += (float) xx[j];
-						cb->ht[index+j-startfreq] += (short int) Ht[j];
-						bufA[j] += (float) xx[j];
-						htA[j] += (short int) Ht[j];
+				if (w > 0)
+				{
+					cepstrum_filtering(&xx[0], &yb[0]);
+					// copying the data into buffers
+					for (j = startfreq; j <= endfreq; j++) {
+						if (Ht[j] > 0.) {
+							cb->buffer[index+j-startfreq] += (float) xx[j];
+							cb->ht[index+j-startfreq] += (short int) Ht[j];
+							bufA[j] += (float) xx[j];
+							htA[j] += (short int) Ht[j];
+						}
 					}
 				}
 			} // both channels processed.
@@ -474,7 +482,9 @@ int compute_correlations_normalized
 	float		blockcorr, temp;
 	int			blockcard;
 	float 		maximum, wmean, wstd;
+	int			guard_size;
 
+	guard_size = cb->length * storageblock  * sizeof(short int);
 	// initializing the data structure that holds the correlation sums
 	for (timeindex = 0; timeindex < SRTIME; timeindex++) {
 		for (freqindex = 0; freqindex < SRFREQ; freqindex++) {
@@ -515,6 +525,7 @@ int compute_correlations_normalized
 						blockcard = 0;
 						// point to the first coeff of the current bit
 						k = p1 + ssdecoder.fmiddle[bit][freqindex] - startfreq;
+						if (k < 0 || k >=guard_size) exit(-5);
 						// prevent overflow of the circular buffer.
 						// if (k >= cb->length * storageblock) 
 						// 	k -= cb->length * storageblock;
