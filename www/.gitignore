@@ -1,0 +1,6 @@
+/assets/*
+/protected/runtime/*
+*.csv
+/utils/*
+*.log
+/updater/
