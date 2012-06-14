@@ -32,6 +32,8 @@
             this.logArea = new System.Windows.Forms.RichTextBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.offsetLabel = new System.Windows.Forms.Label();
+            this.offset = new System.Windows.Forms.TrackBar();
             this.rident = new System.Windows.Forms.Label();
             this.ident = new System.Windows.Forms.Label();
             this.fileInfo = new System.Windows.Forms.Label();
@@ -61,6 +63,7 @@
             this.button1 = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.offset)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.panel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -96,6 +99,8 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.offsetLabel);
+            this.groupBox2.Controls.Add(this.offset);
             this.groupBox2.Controls.Add(this.rident);
             this.groupBox2.Controls.Add(this.ident);
             this.groupBox2.Controls.Add(this.fileInfo);
@@ -114,12 +119,31 @@
             this.groupBox2.TabIndex = 5;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Добавление нового ролика";
+            this.groupBox2.Enter += new System.EventHandler(this.groupBox2_Enter);
+            // 
+            // offsetLabel
+            // 
+            this.offsetLabel.AutoSize = true;
+            this.offsetLabel.Location = new System.Drawing.Point(9, 194);
+            this.offsetLabel.Name = "offsetLabel";
+            this.offsetLabel.Size = new System.Drawing.Size(129, 13);
+            this.offsetLabel.TabIndex = 12;
+            this.offsetLabel.Text = "Отступ от начал файла: ";
+            // 
+            // offset
+            // 
+            this.offset.Enabled = false;
+            this.offset.Location = new System.Drawing.Point(6, 210);
+            this.offset.Name = "offset";
+            this.offset.Size = new System.Drawing.Size(292, 45);
+            this.offset.TabIndex = 11;
+            this.offset.Scroll += new System.EventHandler(this.offset_Scroll);
             // 
             // rident
             // 
             this.rident.AutoSize = true;
             this.rident.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.rident.Location = new System.Drawing.Point(9, 197);
+            this.rident.Location = new System.Drawing.Point(9, 242);
             this.rident.Name = "rident";
             this.rident.Size = new System.Drawing.Size(0, 13);
             this.rident.TabIndex = 10;
@@ -170,7 +194,7 @@
             // 
             this.dojob.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.dojob.Enabled = false;
-            this.dojob.Location = new System.Drawing.Point(6, 227);
+            this.dojob.Location = new System.Drawing.Point(6, 324);
             this.dojob.Name = "dojob";
             this.dojob.Size = new System.Drawing.Size(290, 39);
             this.dojob.TabIndex = 6;
@@ -410,11 +434,12 @@
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.logArea);
             this.Name = "Form1";
-            this.Text = "Регистратор. Сборка 1.12042012";
+            this.Text = "Регистратор. Сборка 1.15062012";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.panel1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.offset)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
@@ -458,6 +483,8 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn NameColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn TimeColumn;
         private System.Windows.Forms.Panel panel4;
+        private System.Windows.Forms.Label offsetLabel;
+        private System.Windows.Forms.TrackBar offset;
     }
 }
 

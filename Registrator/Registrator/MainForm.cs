@@ -69,10 +69,13 @@ namespace Registrator
                     return;
                 }
                 filename.Text = openFileDialog1.FileName;
-                fileInfo.Text = String.Format("{3:F3} сек ({0} Гц / {2} {1})", current_file.SampleRate, ((float)current_file.Channels == 1) ? "Моно" : "Стерео", current_file.BitsPerSample, current_file.TimeLength);
+                fileInfo.Text = String.Format("{3:F3} сек ({0} Гц / {2} {1})", current_file.SampleRate, ((float)current_file.Channels == 1) ? "Моно" : "Стерео", current_file.BitsPerSample, current_file.TimeLength);             
                 if (getFileIdent(filename.Text, ident) == 0)
                 {
                     dojob.Enabled = true;
+                    offset.Value = (current_file.MarkedOffset == -1) ? 0 : current_file.MarkedOffset;
+                    offset.Maximum = (int)current_file.TimeLength - 12;
+                    offset.Enabled = true;
                 }
 
 
@@ -127,10 +130,11 @@ namespace Registrator
             }
 
             dojob.Enabled = false;
+            offset.Enabled = false;
 
-            int samples = current_file.Samples;
-            int freq = current_file.SampleRate;
-            int length = (int)Math.Floor(current_file.TimeLength);
+            uint samples = current_file.Samples;
+            uint freq = current_file.SampleRate;
+            uint length = (uint)Math.Floor(current_file.TimeLength);
             log("Получение идентификатора ролика...");
             IdentResult r = Loader.Load<IdentResult>("getalways");
             if (r.result == "success")
@@ -149,7 +153,7 @@ namespace Registrator
                 
                 string fn = filename.Text;
                 string res = getFreeFilename(fn);
-                watermarker_.Arguments = "\"" + fn + "\" \"" + res + "\" " + String.Format("{0:X2}", r.ident) + " 2 0";
+                watermarker_.Arguments = String.Format("\"{0}\" \"{1}\" {2} {3} {4}", fn, res, String.Format("{0:X2}", r.ident), 2, offset.Value);
                
                 Process p = Process.Start(watermarker_);
                 p.WaitForExit();
@@ -182,6 +186,7 @@ namespace Registrator
                         res = fn;
                     }
                     log("Результат сохранен в файл " + res);
+                    WAVFileInfo.Mark(res, (ushort)offset.Value, (ushort)r.ident);
                     log("Регистрация ролика на сервере...");
                     Result m = Loader.Load<Result>("add&ident=" + r.ident + "&length=" + length + "&name=" + System.Web.HttpUtility.UrlEncode(name.Text)+"&actived="+r.actived);
                     if (m.result == "success")
@@ -219,7 +224,7 @@ namespace Registrator
         {
             log("Проверка файла \"" + filename + "\" на наличие метки...");
             label.Text = "Идет проверка наличия метки...";
-            detector_.Arguments = "\"" + filename + "\"";
+            detector_.Arguments = String.Format("\"{0}\" {1} {2}",filename, 2, (current_file.MarkedOffset == -1) ? 0 : current_file.MarkedOffset);
             Process p = Process.Start(detector_);
             while (true)
             {
@@ -234,6 +239,14 @@ namespace Registrator
                     {
                         label.Text = "Ролик содержит метку: " + z.ToString();
                         log("Найдена метка: " + z.ToString());
+                        if (current_file.MarkedOffset != -1 && current_file.Marker != z)
+                        {
+                            log(String.Format("Не совпадение данных меток: легкая - {0}, общая - {1}", current_file.Marker, z));
+                        }
+                        else
+                        {
+                            log("Метка найдена на " + current_file.MarkedOffset + " сек. от начала файла");
+                        }
                         return z;
                     }
                 }
@@ -399,6 +412,16 @@ namespace Registrator
         private void button4_Click(object sender, EventArgs e)
         {
             changeStatus("Деактивировать", "deactivate", 0, Color.Silver);
+        }
+
+        private void groupBox2_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void offset_Scroll(object sender, EventArgs e)
+        {
+            offsetLabel.Text = String.Format("Отступ от начал файла: {0} сек.", offset.Value);
         }
 
         

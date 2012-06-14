@@ -24,3 +24,15 @@ D:\Work\Workspace\AdvController\Registrator\Registrator\obj\Debug\Registrator.Pr
 D:\Work\Workspace\AdvController\Registrator\Registrator\obj\Debug\Registrator.RenameForm.resources
 D:\Work\Workspace\AdvController\Registrator\Registrator\obj\Debug\ResGen.read.1.tlog
 D:\Work\Workspace\AdvController\Registrator\Registrator\obj\Debug\ResGen.write.1.tlog
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\Registrator.exe
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\Registrator.pdb
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\ResolveAssemblyReference.cache
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\ResGen.read.1.tlog
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\ResGen.write.1.tlog
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\Registrator.Form1.resources
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\Registrator.Properties.Resources.resources
+D:\GitHub\AdvController\Registrator\Registrator\obj\Debug\Registrator.RenameForm.resources
+D:\GitHub\AdvController\Registrator\Registrator\bin\Debug\Registrator.exe
+D:\GitHub\AdvController\Registrator\Registrator\bin\Debug\Registrator.pdb
+D:\GitHub\AdvController\Registrator\Registrator\bin\Debug\Newtonsoft.Json.Net35.pdb
+D:\GitHub\AdvController\Registrator\Registrator\bin\Debug\Newtonsoft.Json.Net35.xml

@@ -9,20 +9,38 @@ namespace Registrator
 {
     public class WAVFileInfo
     {
-        int channels_;
-        int bitsPerSample_;
-        int sampleRate_;
-        int bytesPerSecond_;
-        int samples_;
+        ushort format_;
+        ushort channels_;
+        uint sampleRate_;
+        uint bytesPerSecond_;
+        ushort blockAlign_;
+        ushort bitsPerSample_;
+        ushort extraLength_;
+        byte[] extraBytes_;
+
+        uint samples_;
         float timeLength_;
-        int dataSize_;
+        uint dataSize_;
         string filename_;
+        int marker_offset_;
+        ushort marker_;
+
+
+        public int MarkedOffset
+        {
+            get { return marker_offset_; }
+        }
+
+        public ushort Marker
+        {
+            get { return marker_; }
+        }
 
         public int Channels
         {
             get { return channels_; }
         }
-        public int SampleRate
+        public uint SampleRate
         {
             get { return sampleRate_; }
         }
@@ -31,7 +49,7 @@ namespace Registrator
             get { return bitsPerSample_; }
         }
 
-        public int Samples
+        public uint Samples
         {
             get { return samples_; }
         }
@@ -41,7 +59,7 @@ namespace Registrator
             get { return timeLength_; }
         }
 
-        public int DataSize
+        public uint DataSize
         {
             get { return dataSize_; }
         }
@@ -72,44 +90,125 @@ namespace Registrator
             }
         }
 
+        private bool ReadChunkId(System.IO.BinaryReader br, string str)
+        {
+            try {
+                byte[] b = br.ReadBytes(str.Length);
+
+                for (int i = 0; i < str.Length; ++i) {
+                    if (b[i] != str[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            } catch(Exception e) {
+                return false;
+            }
+        }
+
+        private void ReadFormatChunk(System.IO.BinaryReader br, uint chunk_id, uint chunk_length)
+        {
+            format_ = br.ReadUInt16();
+            if (format_ != 1) {
+                throw new Exception("Unsupported WAV format");
+            }
+            channels_ = br.ReadUInt16();
+
+            sampleRate_ = br.ReadUInt32();
+            bytesPerSecond_ = br.ReadUInt32();
+
+            blockAlign_ = br.ReadUInt16();
+            bitsPerSample_ = br.ReadUInt16();
+            if (chunk_length > 16)
+            {
+                extraLength_ = br.ReadUInt16();
+                if (extraLength_ > 0)
+                {
+                    extraBytes_ = br.ReadBytes(extraLength_);
+                }
+            }
+        }
+
+        private void ReadDataChunk(System.IO.BinaryReader br, uint chunk_id, uint chunk_length)
+        {
+            dataSize_ = chunk_length;
+            samples_ = dataSize_ / bytesPerSecond_ / channels_;
+            timeLength_ = (float)dataSize_ / bytesPerSecond_;
+            br.BaseStream.Seek(chunk_length, SeekOrigin.Current);
+        }
+
+        private void ReadFactChunk(System.IO.BinaryReader br, uint chunk_id, uint chunk_length)
+        {
+            if (chunk_length == 8 && ReadChunkId(br, "SRS ")) {
+                marker_offset_ = br.ReadInt16();
+                if (marker_offset_ >= Math.Round(timeLength_)) {
+                    marker_offset_ = -1;
+                } else {
+                    marker_ = br.ReadUInt16();
+                }
+            }
+        }
+
+        static public void Mark(String filename, ushort offset, ushort marker)
+        {
+            WAVFileInfo f = new WAVFileInfo(filename);
+            if (f.marker_offset_ != -1) {
+                throw new Exception("Already marked");
+            }
+
+            System.IO.FileStream fileStream = System.IO.File.Open(filename, System.IO.FileMode.Open);
+            System.IO.BinaryWriter br = new System.IO.BinaryWriter(fileStream);
+            long fs = fileStream.Length;
+            br.Seek(0, SeekOrigin.End);
+            br.Write((uint)0x74636166);
+            br.Write((uint)8);
+            br.Write((uint)0x20535253);
+            br.Write((ushort)offset);
+            br.Write((ushort)marker);
+
+            br.Seek(4, SeekOrigin.Begin);
+            br.Write((uint)(fs + 4));
+            br.Close();
+        }
+
         public WAVFileInfo(String filename)
         {
             filename_ = filename;
             System.IO.FileStream fileStream = System.IO.File.Open(filename, System.IO.FileMode.Open);
-            if (
-                fileStream.ReadByte() != 'R' ||
-                fileStream.ReadByte() != 'I' ||
-                fileStream.ReadByte() != 'F' ||
-                fileStream.ReadByte() != 'F'
-               ) throw new Exception();
+            System.IO.BinaryReader br = new System.IO.BinaryReader(fileStream);
 
-            Console.WriteLine(fileStream.Position);
-            fileStream.Seek(4, SeekOrigin.Current);
-            Console.WriteLine(fileStream.Position);
+            if (br.ReadUInt32() != 0x46464952) { //RIFF
+                throw new Exception();
+            }
+
+            uint riff_len = br.ReadUInt32();
+
+            if (br.ReadUInt32() != 0x45564157) {
+                throw new Exception();
+            }
             
-            if (
-                   fileStream.ReadByte() != 'W' ||
-                   fileStream.ReadByte() != 'A' ||
-                   fileStream.ReadByte() != 'V' ||
-                   fileStream.ReadByte() != 'E'
-            ) throw new Exception();
-
-            waitFor(fileStream, "fmt "); 
-            int len = fileStream.ReadByte() | fileStream.ReadByte() << 8 | fileStream.ReadByte() << 16 | fileStream.ReadByte() << 24;
-
-            int pos = (int)fileStream.Position;
-            short format = (short)(fileStream.ReadByte() | fileStream.ReadByte() << 8);
-            channels_ = fileStream.ReadByte() | fileStream.ReadByte() << 8;
-            sampleRate_ = fileStream.ReadByte() | fileStream.ReadByte() << 8 | fileStream.ReadByte() << 16 | fileStream.ReadByte() << 24;
-            bytesPerSecond_ = fileStream.ReadByte() | fileStream.ReadByte() << 8 | fileStream.ReadByte() << 16 | fileStream.ReadByte() << 24;
-            short blockalign = (short)(fileStream.ReadByte() | fileStream.ReadByte() << 8);
-            bitsPerSample_ = fileStream.ReadByte() | fileStream.ReadByte() << 8;
-            fileStream.Seek(len - (fileStream.Position - pos),SeekOrigin.Current);
-
-            waitFor(fileStream, "data");
-            dataSize_ = fileStream.ReadByte() | fileStream.ReadByte() << 8 | fileStream.ReadByte() << 16 | fileStream.ReadByte() << 24;
-            samples_ = dataSize_ / bytesPerSecond_ / channels_;
-            timeLength_ = (float)dataSize_ / bytesPerSecond_;
+            marker_offset_ = -1;
+            while (fileStream.Position < fileStream.Length) {
+                uint chunk_id = br.ReadUInt32();
+                uint chunk_length = br.ReadUInt32();
+                Console.WriteLine(String.Format("Chunk {0:X} length: {1}", chunk_id, chunk_length));
+                       
+                switch (chunk_id)
+                {
+                    case 0x20746d66:
+                        ReadFormatChunk(br, chunk_id, chunk_length);
+                        break;
+                    case 0x61746164:
+                        ReadDataChunk(br, chunk_id, chunk_length);
+                        break;
+                    case 0x74636166:
+                        ReadFactChunk(br, chunk_id, chunk_length);
+                        break;
+                    default:
+                        fileStream.Seek(chunk_length + 4, SeekOrigin.Current);
+                        break;
+                };
+            }
             fileStream.Close();
         }
     }
