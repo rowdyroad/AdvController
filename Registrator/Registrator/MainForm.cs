@@ -239,9 +239,12 @@ namespace Registrator
                     {
                         label.Text = "Ролик содержит метку: " + z.ToString();
                         log("Найдена метка: " + z.ToString());
-                        if (current_file.MarkedOffset != -1 && current_file.Marker != z)
+                        if (current_file.MarkedOffset != -1)
                         {
-                            log(String.Format("Не совпадение данных меток: легкая - {0}, общая - {1}", current_file.Marker, z));
+                            if (current_file.Marker != z)
+                            {
+                                log(String.Format("Не совпадение данных меток: легкая - {0}, общая - {1}", current_file.Marker, z));
+                            }
                         }
                         else
                         {

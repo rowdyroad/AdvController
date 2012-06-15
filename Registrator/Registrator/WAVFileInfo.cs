@@ -183,7 +183,7 @@ namespace Registrator
 
             uint riff_len = br.ReadUInt32();
 
-            if (br.ReadUInt32() != 0x45564157) {
+            if (br.ReadUInt32() != 0x45564157) { //WAVE
                 throw new Exception();
             }
             
@@ -196,16 +196,16 @@ namespace Registrator
                 switch (chunk_id)
                 {
                     case 0x20746d66:
-                        ReadFormatChunk(br, chunk_id, chunk_length);
+                        ReadFormatChunk(br, chunk_id, chunk_length); //fmt 
                         break;
                     case 0x61746164:
-                        ReadDataChunk(br, chunk_id, chunk_length);
+                        ReadDataChunk(br, chunk_id, chunk_length); //data
                         break;
                     case 0x74636166:
-                        ReadFactChunk(br, chunk_id, chunk_length);
+                        ReadFactChunk(br, chunk_id, chunk_length); //fact
                         break;
                     default:
-                        fileStream.Seek(chunk_length + 4, SeekOrigin.Current);
+                        fileStream.Seek(chunk_length, SeekOrigin.Current);
                         break;
                 };
             }

@@ -126,9 +126,9 @@
             this.offsetLabel.AutoSize = true;
             this.offsetLabel.Location = new System.Drawing.Point(9, 194);
             this.offsetLabel.Name = "offsetLabel";
-            this.offsetLabel.Size = new System.Drawing.Size(129, 13);
+            this.offsetLabel.Size = new System.Drawing.Size(135, 13);
             this.offsetLabel.TabIndex = 12;
-            this.offsetLabel.Text = "Отступ от начал файла: ";
+            this.offsetLabel.Text = "Отступ от начала файла: ";
             // 
             // offset
             // 
