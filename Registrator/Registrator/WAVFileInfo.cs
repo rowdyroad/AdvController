@@ -189,25 +189,34 @@ namespace Registrator
             
             marker_offset_ = -1;
             while (fileStream.Position < fileStream.Length) {
-                uint chunk_id = br.ReadUInt32();
-                uint chunk_length = br.ReadUInt32();
-                Console.WriteLine(String.Format("Chunk {0:X} length: {1}", chunk_id, chunk_length));
-                       
-                switch (chunk_id)
+                try
                 {
-                    case 0x20746d66:
-                        ReadFormatChunk(br, chunk_id, chunk_length); //fmt 
-                        break;
-                    case 0x61746164:
-                        ReadDataChunk(br, chunk_id, chunk_length); //data
-                        break;
-                    case 0x74636166:
-                        ReadFactChunk(br, chunk_id, chunk_length); //fact
-                        break;
-                    default:
-                        fileStream.Seek(chunk_length, SeekOrigin.Current);
-                        break;
-                };
+                    Console.WriteLine(String.Format("Pos: {0}  / Size: {1}", fileStream.Position, fileStream.Length));
+                    uint chunk_id = br.ReadUInt32();
+                    uint chunk_length = br.ReadUInt32();
+                    Console.WriteLine(String.Format("Chunk {0:X} length: {1}", chunk_id, chunk_length));
+
+                    switch (chunk_id)
+                    {
+                        case 0x20746d66:
+                            ReadFormatChunk(br, chunk_id, chunk_length); //fmt 
+                            break;
+                        case 0x61746164:
+                            ReadDataChunk(br, chunk_id, chunk_length); //data
+                            break;
+                        case 0x74636166:
+                            ReadFactChunk(br, chunk_id, chunk_length); //fact
+                            break;
+                        default:
+                            fileStream.Seek(chunk_length, SeekOrigin.Current);
+                            break;
+                    };
+
+                }
+                catch (System.IO.EndOfStreamException e)
+                {
+                    break;
+                }
             }
             fileStream.Close();
         }
