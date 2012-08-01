@@ -238,6 +238,9 @@ class EventController extends Controller
     
     function actionIdents()
     {
+	if (!Yii::app()->user->show_log) {
+	    $this->redirect(Yii::app()->homeUrl);
+	}
 	$this->getEvents(new IdentEvent());
     }
 }

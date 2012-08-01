@@ -96,6 +96,65 @@ class RemotingController extends CController
         echo CJSON::encode(array("result" => "success", "data" => $this->q("select * from promo_idents where actived = 1")->queryAll()));
     }
 
+    public function actionIdentsAll()
+    {
+        echo CJSON::encode(array("result" => "success", "data" => $this->q("select * from promo_idents")->queryAll()));
+    }
+    
+    public function actionGetAlways()
+    {
+	if ($r = $this->q("SELECT ident, sum(actived) as s, count(id) as c  from `promo_idents` group by ident order by c,s")->query()) {	
+		$ar = Array();
+		$first = 0;
+		while ($a = $r->read()) {
+		    if (!$first) {
+			$first = $a['ident'];
+		    }
+		    $ar[$a['ident']] = $a;
+		}
+		
+		for ($i = 1; $i < 255; ++$i) {
+		    if ($i == 15) {
+			continue;
+		    }
+		    if (!isset($ar[$i]) || !$ar[$i]['s']) {
+			echo CJSON::encode(array("result" => "success","ident"=>$i, "actived"=>1));
+			return;
+		    }
+		}
+
+		echo CJSON::encode(array("result" => "success","ident"=>$first, "actived"=>0));
+	    return;
+	}
+	echo CJSON::encode(array("result" => "error"));
+    }
+    
+    public function actionActivate($id)
+    {
+	$id = intval($id);
+	if ($ident = $this->q("select ident from promo_idents where id='$id'")->queryScalar()) {
+	    if ($this->q("select count(*) from promo_idents where id <> '$id' and ident ='$ident' and actived = 1")->queryScalar()) {
+		echo CJSON::encode(array("result" => "exists"));
+		return;
+	    }
+	}
+	
+	if ($this->q("update promo_idents set actived = 1 where id='$id'")->execute()) {
+	    echo CJSON::encode(array("result" => "success"));
+	} else {
+	    echo CJSON::encode(array("result" => "error"));
+	}
+    }
+
+    public function actionDeactivate($id)
+    {
+	$id = intval($id);
+	if ($this->q("update promo_idents set actived = 0 where id='$id'")->execute()) {
+	    echo CJSON::encode(array("result" => "success"));
+	} else {
+	    echo CJSON::encode(array("result" => "error"));
+	}
+    }
     public function actionGet($length)
     {
         $count = $this->q("select count(*) from promo_idents where actived = 1")->queryScalar();
@@ -131,12 +190,13 @@ class RemotingController extends CController
         echo CJSON::encode(array("result" => "success"));
     }
 
-    public function actionAdd($ident, $length, $name)
+    public function actionAdd($ident, $length, $name, $actived = 1)
     {
-        $this->q("insert into promo_idents (`ident`,`length`,`name`) values (:ident, :length, :name)")->
+        $this->q("insert into promo_idents (`ident`,`length`,`name`, `actived`) values (:ident, :length, :name, :actived)")->
         bindParam(":ident",intval($ident))->
         bindParam(":length",intval($length))->
         bindParam(":name",addslashes($name))->
+        bindParam(":actived",intval($actived))->
         execute();
         echo CJSON::encode(array("result" => "success", "id" => Yii::app()->db->getLastInsertID()));
     }

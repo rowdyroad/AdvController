@@ -35,7 +35,7 @@
 			else:
 				$this->widget('zii.widgets.CMenu',array(
 					'items'=>array(
-						array('label'=>'Журнал регистраций', 'url'=>array('/event/idents')),
+						array('label'=>'Журнал регистраций', 'url'=>array('/event/idents'), 'visible' => Yii::app()->user->show_log),
 						array('label'=>'Отчетность', 'url'=>array('/report/index')),
 						array('label'=>'Ролики', 'url'=>array('/promo/idents')),
 						array('label'=>'Проекторы', 'url'=>array('/soas/index')),

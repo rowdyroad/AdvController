@@ -59,7 +59,6 @@ class ReportController extends Controller
         
     	    $query = "select s.*, unix_timestamp(s.`date`) as `timestamp`,p.name as promo_name, z.hall  from soas_statistic as s, promo_idents as p,  soas as z  where z.cinema_id = :cinema_id and s.soas_id = z.soas_id and `date` >= :date_begin and `date` < :date_end and s.promo_id = p.id  order by `hall`,`date`";
     	    if (!Yii::app()->user->is_admin) {
-    	    
     		$query = "select * from (
     					select 
     					t.soas_id, 
@@ -121,7 +120,6 @@ class ReportController extends Controller
                                                             networks.network_id = cinemas.network_id")
             ->bindParam(":cinema_id",$cinema_id)->queryRow();
         }
-        
         $this->render('days',array("data"=>$data,'date_begin'=>$date_begin,'date_end'=>$date_end, 'info'=>$info));  
     }
     

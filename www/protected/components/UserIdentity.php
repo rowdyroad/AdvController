@@ -23,6 +23,7 @@ class UserIdentity extends CUserIdentity
                 $this->setState('title', $record->name);
                 $this->setState('is_admin', $record->is_admin);
                 $this->setState('is_observer', $record->is_observer);
+                $this->setState('show_log',$record->show_log);
                 if ($record->is_admin)
                     $this->username = 'admin';
                 $this->errorCode = self::ERROR_NONE;
