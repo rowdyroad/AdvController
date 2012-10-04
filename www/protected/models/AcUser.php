@@ -23,6 +23,11 @@ class AcUser extends CActiveRecord
     {
         return parent::model($className);
     }
+    
+    public static function hasNetwork($network_id)
+    {
+	return Yii::app()->user->is_admin || Yii::app()->db->createCommand('select 1 from users_networks where  network_id = '.$network_id.' and user_id = '.Yii::app()->user->id)->queryScalar();
+    }	
 
     /**
      * @return string the associated database table name

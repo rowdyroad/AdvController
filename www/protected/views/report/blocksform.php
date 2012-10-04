@@ -9,10 +9,14 @@
         </tr>
 <tr><td>Кинотеатр</td><td>       
         <?        
-         $r = Yii::app()->db->createCommand("select c.cinema_id, CONCAT(n.name,' / ',cr.name,' ',ct.name,' ',c.name) as name from cinemas as c, networks as n, countries as cr, cities as ct where c.network_id = n.network_id and c.city_id = ct.city_id and c.country_id  = cr.country_id order by `name`")->
+         $r = Yii::app()->db->createCommand("select c.cinema_id,n.network_id, CONCAT(n.name,' / ',cr.name,' ',ct.name,' ',c.name) as name from cinemas as c, networks as n, countries as cr, cities as ct where c.network_id = n.network_id and c.city_id = ct.city_id and c.country_id  = cr.country_id order by `name`")->
                 query();
          $data = Array('0'=>'-');          
          while ($row = $r->read()) {
+         
+            if (!AcUser::hasNetwork($row['network_id'])) {
+        	continue;
+            }
             $data[$row['cinema_id']] = $row['name'];
          }            
          echo CHTML::dropDownList('cinema_id',@$_REQUEST['cinema_id'],$data,array('id'=>'cinema_id_blocks','ajax' => array('type'=>'POST','url'=>$this->createUrl('report/cinemaHalls'),'update'=>'#soas_id_blocks'))); ?>

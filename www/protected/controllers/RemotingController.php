@@ -103,6 +103,11 @@ class RemotingController extends CController
     
     public function actionGetAlways()
     {
+	if ($id = $this->getFreeIdent()) {
+	   echo CJSON::encode(array("result"=>"success", "ident"=>$id, "actived"=>0));
+	   return;
+	}
+	
 	if ($r = $this->q("SELECT ident, sum(actived) as s, count(id) as c  from `promo_idents` group by ident order by c,s")->query()) {	
 		$ar = Array();
 		$first = 0;
@@ -124,7 +129,7 @@ class RemotingController extends CController
 		}
 
 		echo CJSON::encode(array("result" => "success","ident"=>$first, "actived"=>0));
-	    return;
+		return;
 	}
 	echo CJSON::encode(array("result" => "error"));
     }
@@ -155,29 +160,42 @@ class RemotingController extends CController
 	    echo CJSON::encode(array("result" => "error"));
 	}
     }
-    public function actionGet($length)
+    
+    
+    private function getFreeIdent()
     {
         $count = $this->q("select count(*) from promo_idents where actived = 1")->queryScalar();
-        if ($count >= 253)
-        {
-            echo CJSON::encode(array("result" => "error", "errno" => 1, "msg" => "no free ident"));
-            return;
+        if ($count >= 253) {
+            //echo CJSON::encode(array("result" => "error", "errno" => 1, "msg" => "no free ident"));
+            return false;
         }
-
+	
+	$c = 0;
         while (true)
         {
             $i = rand(1, 255);
             if ($i == 15)
                 continue;
-            $r = $this->q("select 1 from promo_idents where ident = :ident and actived = 1")->
-            bindParam(":ident",$i)->
-            queryAll();            
-            if (empty($r))
-            {
-                echo CJSON::encode(array("result" => "success", "ident" => $i));
-                return;
+            if ($r = $this->q("select 1 from promo_idents where ident = :ident and actived = 1")->bindParam(":ident",$i)->queryAll()) {
+                //echo CJSON::encode(array("result" => "success", "ident" => $i));
+                return $i;
+            }
+            
+            if (++$c > 255) {
+        	return false;
             }
         }
+    
+    }
+
+
+    public function actionGet($length)
+    {
+       if ($id = $this->getFreeIdent()) {
+           echo CJSON::encode(array("result" => "success", "ident"=> $id));
+       } else {
+           echo CJSON::encode(array("result" => "error", "errno"=> 1, "msg"=>"no free ident"));
+       }
     }
 
 

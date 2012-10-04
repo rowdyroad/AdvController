@@ -71,6 +71,11 @@ class AcUserController extends Controller
 			'model'=>$model,
 		));
 	}
+	
+	/*static public function hasNetwork($network_id) 
+	{
+	    return  Yii::app()->db->createCommand('select 1 from users_networks where network_id = '.$network_id.' and user_id = '.Yii::app()->user->id)->queryScalar();
+	}*/
 
 	/**
 	 * Updates a particular model.
@@ -87,8 +92,14 @@ class AcUserController extends Controller
 		if(isset($_POST['AcUser']))
 		{
 			$model->attributes=$_POST['AcUser'];
-			if($model->save())
+			if($model->save()) {
+				Yii::app()->db->createCommand("delete from users_networks where user_id = ".$model->ac_user_id)->execute();
+				$networks = @$_POST['User']['networks'];
+				foreach ($networks as $id=>$o) {
+				    Yii::app()->db->createCommand("insert into users_networks (user_id, network_id) values('".$model->ac_user_id."',$id)")->execute();
+				}
 				$this->redirect(array('view','id'=>$model->ac_user_id));
+			}
 		}
 
 		$this->render('update',array(

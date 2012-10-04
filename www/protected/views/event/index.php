@@ -60,6 +60,9 @@ function checkedItem($item, $param_name, $name)
     $networks = Yii::app()->db->CreateCommand("select network_id,name from networks order by name")->queryAll();
     foreach ($networks as $network)
     {
+	if (!AcUser::hasNetwork($network['network_id'])) {
+	    continue;
+	}
         $n_data = checkedItem($network,'network_id','name');
         $cinemas = Yii::app()->db->CreateCommand("select cinema_id,name from cinemas where network_id = '".$network['network_id']."' order by name")->queryAll();
         foreach ($cinemas as $cinema)

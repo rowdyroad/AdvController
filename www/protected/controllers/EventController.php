@@ -8,7 +8,7 @@ class EventController extends Controller
         $data[0]['actions'][] = 'filtered';
         $data[0]['actions'][] = 'idents';
         $data[0]['actions'][] = 'days';
-        
+        $data[0]['actions'][] = 'add';
         return $data;
     }
 
@@ -58,7 +58,9 @@ class EventController extends Controller
        { 
            $data = $_REQUEST['EventSearch'];
            $c = Array();
-
+           
+           $networks = Yii::app()->db->createCommand('select network_id from users_networks where user_id = '.Yii::app()->user->id)->queryColumn();
+        
            if (!empty($data['dt_registered_begin']))
                  $c[] = "and dt_registered>='".str_replace("/","-",$data['dt_registered_begin'])."' ";
 
@@ -73,6 +75,9 @@ class EventController extends Controller
 
            if (!empty($data['network_id']))
                $c[] = "and network_id in ('".implode("', '", $data['network_id'])."') ";
+	
+    	    if (!empty($networks))
+               $c[] = "and network_id in ('".implode("', '", $networks)."') ";
 
            if (!empty($data['cinema_id']))
                $c[] = "and cinema_id in ('".implode("', '", $data['cinema_id'])."') ";
@@ -242,6 +247,11 @@ class EventController extends Controller
 	    $this->redirect(Yii::app()->homeUrl);
 	}
 	$this->getEvents(new IdentEvent());
+    }
+    
+    function actionAdd()
+    {
+        $this->render('add');
     }
 }
 ?>

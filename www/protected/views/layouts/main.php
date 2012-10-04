@@ -36,7 +36,8 @@
 				$this->widget('zii.widgets.CMenu',array(
 					'items'=>array(
 						array('label'=>'Журнал регистраций', 'url'=>array('/event/idents'), 'visible' => Yii::app()->user->show_log),
-						array('label'=>'Отчетность', 'url'=>array('/report/index')),
+						array('label'=>'(+)', 'url'=>array('/event/add'), 'visible' => Yii::app()->user->is_admin),
+                        array('label'=>'Отчетность', 'url'=>array('/report/index')),
 						array('label'=>'Ролики', 'url'=>array('/promo/idents')),
 						array('label'=>'Проекторы', 'url'=>array('/soas/index')),
 						array('label'=>'Кинотеатры', 'url'=>array('/network/index')),
